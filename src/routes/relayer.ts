@@ -25,6 +25,20 @@ router.post('/gasless/submit', addressRateLimiter, (req, res) =>
   relayerController.submitGaslessTransaction(req, res)
 );
 
+// NEW: Gasless transaction WITH wallet prompt (for transparency)
+router.post('/gasless-with-wallet', addressRateLimiter, async (req, res) => {
+  try {
+    const result = await relayerController.submitGaslessWithWallet(req, res);
+    return result;
+  } catch (error) {
+    logger.error('Error in gasless-with-wallet endpoint:', error);
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Failed to process gasless transaction with wallet' 
+    });
+  }
+});
+
 // Traditional relayer routes (user pays gas)
 router.post('/quote', addressRateLimiter, (req, res) => 
   relayerController.getQuote(req, res)

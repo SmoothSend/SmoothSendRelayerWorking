@@ -8,7 +8,8 @@ import {
   sponsoredBuildRequestSchema,
   gaslessQuoteRequestSchema,
   gaslessSubmitRequestSchema,
-  addressSchema 
+  addressSchema,
+  gaslessWithWalletRequestSchema
 } from '../utils/validation';
 import { 
   TransferRequest, 
@@ -798,6 +799,86 @@ export class RelayerController {
     } catch (error) {
       logger.error('Error submitting true gasless transaction:', error);
       res.status(500).json({ error: 'Failed to submit true gasless transaction' });
+    }
+  }
+
+  async submitGaslessWithWallet(req: Request, res: Response): Promise<Response> {
+    try {
+      const { error, value } = gaslessWithWalletRequestSchema.validate(req.body);
+      if (error) {
+        return res.status(400).json({ 
+          success: false, 
+          error: error.details[0].message 
+        });
+      }
+
+      const { userSignature, fromAddress, toAddress, amount, coinType, relayerFee } = value;
+
+      logger.info('🎯 GASLESS WITH WALLET: Processing user-signed transaction', {
+        from: fromAddress,
+        to: toAddress,
+        amount: (parseInt(amount) / 1e6).toFixed(3) + ' USDC',
+        relayerFee: (parseInt(relayerFee) / 1e6).toFixed(6) + ' USDC',
+        userApproved: 'Yes ✅'
+      });
+
+      // Submit the gasless transaction with proper user signature handling
+      const transactionHash = await this.aptosService.submitGaslessWithWalletSignature(
+        fromAddress,
+        toAddress, 
+        amount,
+        coinType,
+        relayerFee,
+        userSignature
+      );
+
+      // Try to store in database (non-blocking)
+      try {
+        if (this.db) {
+          const transactionId = `wallet-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          await this.db('transactions').insert({
+            id: transactionId,
+            sender_address: fromAddress,
+            recipient_address: toAddress,
+            amount: amount,
+            coin_type: coinType,
+            relayer_fee: relayerFee,
+            transaction_hash: transactionHash,
+            status: 'completed',
+            gas_fee_paid_by: 'relayer',
+            user_paid_apt: false,
+            created_at: new Date(),
+            updated_at: new Date()
+          });
+        }
+      } catch (dbError) {
+        logger.warn('Database insert failed (non-blocking):', dbError);
+      }
+
+      logger.info('🎉 WALLET GASLESS SUCCESS!', {
+        hash: transactionHash,
+        userExperience: 'Saw full transaction details in wallet ✅',
+        userApproval: 'Explicitly approved transaction ✅',
+        gasFeePaidBy: 'Relayer ✅',
+        transparency: 'Full transaction breakdown shown ✅'
+      });
+
+      return res.json({
+        success: true,
+        transactionId: `wallet-${Date.now()}`,
+        hash: transactionHash,
+        gasFeePaidBy: 'relayer',
+        userPaidAPT: false,
+        transparency: 'User saw full transaction details',
+        message: 'GASLESS WITH WALLET: User approved transaction, relayer paid gas!'
+      });
+
+    } catch (error) {
+      logger.error('Error submitting gasless transaction with wallet:', error);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Failed to submit gasless transaction' 
+      });
     }
   }
 } 

@@ -1,4 +1,4 @@
-<img width="364" height="133" alt="image" src="https://github.com/user-attachments/assets/2c1af578-aa22-47e1-86d3-2008589c6ace" /># 🚀 SmoothSend - Aptos Gasless Transaction Relayer
+# 🚀 SmoothSend - Aptos Gasless Transaction Relayer
 
 A **production-ready gasless transaction relayer** for Aptos blockchain that allows users to send USDC without holding APT for gas fees. The relayer uses **Pyth Network oracle** for real-time pricing and charges sustainable fees in USDC.
 

@@ -10,7 +10,7 @@ export const config = {
   pythHermesUrl: process.env.PYTH_HERMES_URL || 'https://hermes.pyth.network',
   aptosRpcUrl: process.env.APTOS_RPC_URL!,
   redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
-  databaseUrl: process.env.DATABASE_URL!,
+  databaseUrl: process.env.DATABASE_URL, // Optional - no exclamation mark
   feeMarkupPercentage: parseInt(process.env.FEE_MARKUP_PERCENTAGE || '10'),
   minAptBalance: parseInt(process.env.MIN_APT_BALANCE || '1000000000'),
   maxTransactionAmount: parseInt(process.env.MAX_TRANSACTION_AMOUNT || '1000000000'),

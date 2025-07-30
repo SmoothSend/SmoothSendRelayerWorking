@@ -4,6 +4,7 @@ import { AptosService } from '../services/aptosService';
 import { PriceService } from '../services/priceService';
 import { GasService } from '../services/gasService';
 import { createAddressRateLimiter } from '../middleware/rateLimiter';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -48,28 +49,12 @@ router.post('/submit', addressRateLimiter, (req, res) =>
   relayerController.submitTransaction(req, res)
 );
 
-// Sponsored transaction routes (relayer pays gas)
-router.post('/sponsored-quote', addressRateLimiter, (req, res) => 
-  relayerController.getSponsoredQuote(req, res)
-);
-
-router.post('/sponsored-build', addressRateLimiter, (req, res) => 
-  relayerController.buildSponsoredTransaction(req, res)
-);
-
-router.post('/sponsored-submit', addressRateLimiter, (req, res) => 
-  relayerController.submitSponsoredTransaction(req, res)
-);
-
-// Previous implementation (for compatibility)
-router.post('/gasless', addressRateLimiter, (req, res) => 
-  relayerController.submitProperSponsoredTransaction(req, res)
-);
-
-// TRUE GASLESS: User pays USDC + markup, relayer pays gas
-router.post('/true-gasless', addressRateLimiter, (req, res) => 
-  relayerController.submitTrueGaslessTransaction(req, res)
-);
+// ⚠️ REMOVED DANGEROUS FREE ENDPOINTS FOR PRODUCTION SAFETY:
+// - /sponsored-quote, /sponsored-build, /sponsored-submit (user pays $0)
+// - /gasless (user pays $0) 
+// - /true-gasless (user pays $0)
+// These endpoints would bankrupt the relayer by providing free transactions.
+// Use /gasless/quote + /gasless/submit instead (user pays USDC fees).
 
 // Status and monitoring routes
 router.get('/status/:txnHash', (req, res) => 

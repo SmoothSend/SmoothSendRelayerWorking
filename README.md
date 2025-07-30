@@ -8,10 +8,12 @@ A production-ready **gasless transaction relayer** for Aptos blockchain that all
 - **💰 USDC Fee Model**: Relayer charges fees in USDC (gas cost × 1.1)
 - **⚡ Real-time Price Feeds**: Pyth Network integration for APT/USD pricing
 - **🛡️ Rate Limiting**: Protection against API abuse
-- **📊 Transaction Tracking**: PostgreSQL database for transaction history
+- **📊 Transaction Tracking**: PostgreSQL database for transaction history (optional)
 - **⚙️ Configurable**: Environment-based configuration
 - **🔍 Health Monitoring**: Real-time system status
 - **📈 Business Model**: Relayer earns USDC profit for APT gas costs
+- **⚠️ Production Safe**: Dangerous free transaction endpoints disabled
+- **🚀 Database Optional**: Runs without database for quick testing
 
 ## 🏗️ Architecture
 
@@ -67,7 +69,7 @@ A production-ready **gasless transaction relayer** for Aptos blockchain that all
 ## 📋 Prerequisites
 
 - Node.js 18+
-- PostgreSQL 12+
+- PostgreSQL 12+ (optional - for transaction tracking)
 - Redis (optional, for caching)
 - Aptos testnet account with APT balance
 - Pyth Network API access
@@ -88,6 +90,23 @@ npm install
 ### 3. Environment Setup
 ```bash
 cp .env.example .env
+```
+
+### 4. Database Setup (Optional)
+
+**🚀 Quick Start (No Database):**
+Simply leave `DATABASE_URL` empty or remove it from your `.env` file. The relayer will work perfectly for gasless transactions but won't track transaction history.
+
+**📊 Full Setup (With Database):**
+```bash
+# Install PostgreSQL
+sudo apt install postgresql postgresql-contrib
+
+# Create database
+sudo -u postgres createdb relayer_db
+
+# Add to .env:
+DATABASE_URL=postgresql://user:password@localhost:5432/relayer_db
 ```
 
 Edit `.env` with your configuration:
@@ -151,7 +170,7 @@ GET /health
 ```
 Returns system status, balances, and configuration.
 
-### Gasless Transaction Quote
+### Gasless Transaction Quote (Production Safe)
 ```bash
 POST /gasless/quote
 Content-Type: application/json
@@ -164,16 +183,22 @@ Content-Type: application/json
 }
 ```
 
-### Submit Gasless Transaction
+### Submit Gasless Transaction (Production Safe)
 ```bash
-POST /true-gasless
+POST /gasless/submit
 Content-Type: application/json
 
 {
+  "transaction": { /* transaction data from quote */ },
+  "userSignature": {
+    "signature": "0x...",
+    "publicKey": "0x..."
+  },
   "fromAddress": "0x...",
   "toAddress": "0x...",
   "amount": "1000000", 
-  "coinType": "0x3c27315fb69ba6e4b960f1507d1cefcc9a4247869f26a8d59d6b7869d23782c::test_coins::USDC"
+  "coinType": "0x3c27315fb69ba6e4b960f1507d1cefcc9a4247869f26a8d59d6b7869d23782c::test_coins::USDC",
+  "relayerFee": "0.005395"
 }
 ```
 
@@ -181,6 +206,16 @@ Content-Type: application/json
 ```bash
 GET /transaction/:hash
 ```
+
+### ⚠️ Removed Dangerous Endpoints
+The following endpoints have been **permanently removed** for production safety:
+- `POST /true-gasless` - Provided completely free transactions
+- `POST /sponsored-quote` - Provided completely free transactions
+- `POST /sponsored-build` - Provided completely free transactions
+- `POST /sponsored-submit` - Provided completely free transactions
+- `POST /gasless` (single endpoint) - Provided completely free transactions
+
+**Why removed?** These endpoints would bankrupt the relayer by providing 100% free transactions where users pay $0 and relayer absorbs all gas costs.
 
 ## 🧪 Testing
 

@@ -41,7 +41,9 @@ app.use('*', (req, res) => {
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM signal received: closing HTTP server');
   try {
-    await db.destroy();
+    if (db) {
+      await db.destroy();
+    }
   } catch (error) {
     logger.warn('Error closing database connection:', error);
   }
@@ -51,7 +53,9 @@ process.on('SIGTERM', async () => {
 process.on('SIGINT', async () => {
   logger.info('SIGINT signal received: closing HTTP server');
   try {
-    await db.destroy();
+    if (db) {
+      await db.destroy();
+    }
   } catch (error) {
     logger.warn('Error closing database connection:', error);
   }
@@ -61,6 +65,11 @@ process.on('SIGINT', async () => {
 // Cleanup function to run periodically
 const cleanupOldTransactions = async () => {
   try {
+    if (!db) {
+      logger.debug('Database not configured - skipping cleanup');
+      return;
+    }
+    
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
@@ -82,18 +91,22 @@ async function startServer() {
     // Initialize Redis (optional)
     await initRedis();
 
-    // Test database connection (optional for testing)
+    // Test database connection (optional)
     try {
-      await db.raw('SELECT 1');
-      logger.info('Database connection established');
-      
-      // Run migrations
-      await db.migrate.latest();
-      logger.info('Database migrations completed');
-      
-      // Schedule cleanup job (runs daily at midnight)
-      cron.schedule('0 0 * * *', cleanupOldTransactions);
-      logger.info('Cleanup job scheduled');
+      if (config.databaseUrl) {
+        await db?.raw('SELECT 1');
+        logger.info('Database connection established');
+        
+        // Run migrations
+        await db?.migrate.latest();
+        logger.info('Database migrations completed');
+        
+        // Schedule cleanup job (runs daily at midnight)
+        cron.schedule('0 0 * * *', cleanupOldTransactions);
+        logger.info('Cleanup job scheduled');
+      } else {
+        logger.info('No DATABASE_URL provided - running without database (transaction tracking disabled)');
+      }
     } catch (dbError) {
       logger.warn('Database connection failed, some features will be limited:', dbError);
     }

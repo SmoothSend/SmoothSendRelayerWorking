@@ -2,48 +2,43 @@ import { createClient } from 'redis';
 import { config } from '../config';
 import { logger } from '../utils/logger';
 
-let redisClient: any = null;
+// Create Redis client
+const redisClient = createClient({
+  url: config.redisUrl
+});
+
 let isRedisConnected = false;
 
-export async function initRedis() {
-  if (!config.redisUrl) {
-    logger.info('No Redis URL provided, skipping Redis initialization');
-    return;
-  }
+// Redis event handlers
+redisClient.on('error', (err: any) => {
+  logger.error('Redis connection error:', err);
+  isRedisConnected = false;
+});
 
+redisClient.on('connect', () => {
+  logger.info('Connected to Redis');
+  isRedisConnected = true;
+});
+
+redisClient.on('disconnect', () => {
+  logger.warn('Disconnected from Redis');
+  isRedisConnected = false;
+});
+
+// Initialize Redis connection
+export const initRedis = async () => {
   try {
-    redisClient = createClient({
-      url: config.redisUrl
-    });
-
-    redisClient.on('error', (err: any) => {
-      logger.error('Redis Client Error:', err);
-      isRedisConnected = false;
-    });
-
-    redisClient.on('connect', () => {
-      logger.info('Connected to Redis');
-      isRedisConnected = true;
-    });
-
-    redisClient.on('disconnect', () => {
-      logger.warn('Disconnected from Redis');
-      isRedisConnected = false;
-    });
-
     await redisClient.connect();
-    isRedisConnected = true;
     logger.info('Redis initialized successfully');
   } catch (error) {
-    logger.warn('Redis connection failed, continuing without cache:', error);
-    isRedisConnected = false;
-    redisClient = null;
+    logger.error('Failed to initialize Redis:', error);
+    throw error;
   }
-}
+};
 
 // Safe Redis operations
 export const safeRedisGet = async (key: string): Promise<string | null> => {
-  if (!isRedisConnected || !redisClient) return null;
+  if (!isRedisConnected) return null;
   try {
     return await redisClient.get(key);
   } catch (error) {
@@ -53,7 +48,7 @@ export const safeRedisGet = async (key: string): Promise<string | null> => {
 };
 
 export const safeRedisSetex = async (key: string, seconds: number, value: string): Promise<void> => {
-  if (!isRedisConnected || !redisClient) return;
+  if (!isRedisConnected) return;
   try {
     await redisClient.setEx(key, seconds, value);
   } catch (error) {

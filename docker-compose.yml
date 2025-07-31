@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  relayer:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - APTOS_NETWORK=testnet
+      - RELAYER_PRIVATE_KEY=${RELAYER_PRIVATE_KEY}
+      - CONTRACT_ADDRESS=${CONTRACT_ADDRESS}
+      - APTOS_RPC_URL=${APTOS_RPC_URL}
+      - TREASURY_ADDRESS=${TREASURY_ADDRESS}
+      - REDIS_URL=${REDIS_URL}
+      - DATABASE_URL=${DATABASE_URL}
+      - PYTH_HERMES_URL=https://hermes.pyth.network
+      - FEE_MARKUP_PERCENTAGE=10
+      - MIN_APT_BALANCE=1000000000
+      - MAX_TRANSACTION_AMOUNT=1000000000
+      - LOG_LEVEL=info
+      - RATE_LIMIT_WINDOW_MS=60000
+      - RATE_LIMIT_MAX_REQUESTS=100
+      - PRICE_CACHE_TTL=30
+      - GAS_ESTIMATE_BUFFER=20
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=smoothsend
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  postgres_data:
+  redis_data:

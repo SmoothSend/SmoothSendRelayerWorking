@@ -11,7 +11,7 @@ export const db = config.databaseUrl ? knex({
     max: 10
   },
   migrations: {
-    directory: './migrations'
+    directory: './src/database/migrations'
   }
 }) : null;
 

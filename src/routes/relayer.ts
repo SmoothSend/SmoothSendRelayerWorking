@@ -57,6 +57,10 @@ router.post('/submit', addressRateLimiter, (req, res) =>
 // Use /gasless/quote + /gasless/submit instead (user pays USDC fees).
 
 // Status and monitoring routes
+router.get('/balance/:address', (req, res) => 
+  relayerController.getBalance(req, res)
+);
+
 router.get('/status/:txnHash', (req, res) => 
   relayerController.getTransactionStatus(req, res)
 );

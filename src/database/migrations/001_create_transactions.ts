@@ -1,7 +1,7 @@
-import { Knex } from 'knex';
+import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
-  return knex.schema.createTable('transactions', (table) => {
+  return knex.schema.createTable('transactions', (table: Knex.CreateTableBuilder) => {
     table.uuid('id').primary();
     table.string('hash').unique().index();
     table.string('from_address').notNullable().index();

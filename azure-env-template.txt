@@ -1,0 +1,35 @@
+# Azure Environment Variables Template
+# Copy these to your Azure App Service Configuration -> Application Settings
+
+# Aptos Network Configuration
+APTOS_NODE_URL=https://fullnode.testnet.aptoslabs.com/v1
+APTOS_PRIVATE_KEY=your_private_key_here
+APTOS_ACCOUNT_ADDRESS=your_account_address_here
+
+# Database Configuration (use Azure Database for PostgreSQL)
+DATABASE_URL=postgresql://username:password@your-azure-postgres.postgres.database.azure.com:5432/smoothsend
+
+# Redis Configuration (use Azure Cache for Redis)
+REDIS_URL=redis://your-azure-redis.redis.cache.windows.net:6380
+
+# Server Configuration
+PORT=8080
+NODE_ENV=production
+
+# CORS Configuration
+CORS_ORIGIN=https://your-frontend-domain.vercel.app
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+
+# Gas and Fee Configuration
+MAX_GAS_UNITS=100000
+GAS_UNIT_PRICE=100
+RELAYER_FEE_PERCENTAGE=0.5
+
+# USDC Contract Address
+USDC_CONTRACT_ADDRESS=0x3c27315fb69ba6e4b960f1507d1cefcc9a4247869f26a8d59d6b7869d23782c::test_coins::USDC
+
+# Logging
+LOG_LEVEL=info

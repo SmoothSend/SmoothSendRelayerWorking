@@ -1,0 +1,19 @@
+{
+  "version": "1.0.0",
+  "build": {
+    "commands": [
+      {
+        "name": "npm install",
+        "directory": "."
+      },
+      {
+        "name": "npm run build",
+        "directory": "."
+      }
+    ]
+  },
+  "run": {
+    "command": "npm start",
+    "directory": "."
+  }
+}

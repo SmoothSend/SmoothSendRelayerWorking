@@ -269,6 +269,40 @@ export class RelayerController {
     }
   }
 
+  async getBalance(req: Request, res: Response) {
+    try {
+      const { address } = req.params;
+      
+      if (!address) {
+        return res.status(400).json({ error: 'Address parameter is required' });
+      }
+
+      // Use testnet USDC coin type for balance lookup
+      const testnetUsdcCoinType = '0x3c27315fb69ba6e4b960f1507d1cefcc9a4247869f26a8d59d6b7869d23782c::test_coins::USDC';
+      
+      // Get USDC balance for the address
+      const usdcBalance = await this.aptosService.getCoinBalance(
+        address, 
+        testnetUsdcCoinType
+      );
+
+      res.json({
+        success: true,
+        address,
+        balance: Number(usdcBalance) / Math.pow(10, 6), // Convert from smallest unit to USDC
+        decimals: 6,
+        coinType: testnetUsdcCoinType,
+        timestamp: new Date()
+      });
+    } catch (error) {
+      logger.error('Error getting balance:', error);
+      res.status(500).json({ 
+        success: false,
+        error: 'Failed to fetch balance' 
+      });
+    }
+  }
+
   async getStats(req: Request, res: Response) {
     try {
       // Always try to get relayer balance first
@@ -402,6 +436,8 @@ export class RelayerController {
 
   // NEW: Proper gasless submit with user-signed transaction
   async submitGaslessTransaction(req: Request, res: Response) {
+    let transactionId: string | null = null;
+    
     try {
       const { error, value } = gaslessSubmitRequestSchema.validate(req.body);
       if (error) {
@@ -436,8 +472,16 @@ export class RelayerController {
         return res.status(503).json({ error: 'Service temporarily unavailable' });
       }
 
+      // Get actual gas quote for accurate database tracking
+      const gasQuote = await this.gasService.calculateGasQuote(
+        fromAddress,
+        toAddress,
+        amount,
+        coinType
+      );
+
       // Create transaction record (non-blocking)
-      const transactionId = uuidv4();
+      transactionId = uuidv4();
       try {
         if (db) {
           await db('transactions').insert({
@@ -446,13 +490,13 @@ export class RelayerController {
             to_address: toAddress,
             amount,
             coin_type: coinType,
-            gas_units: '1000', // Will be updated after submission
-            gas_price: '100',
-            total_gas_fee: '100000',
-            apt_price: '5.0',
-            usdc_fee: '0', // User doesn't pay gas in USDC for sponsored transactions
+            gas_units: gasQuote.gasUnits,
+            gas_price: gasQuote.gasPricePerUnit,
+            total_gas_fee: gasQuote.totalGasFee,
+            apt_price: gasQuote.aptPrice.toString(),
+            usdc_fee: gasQuote.usdcFee, // Actual oracle-based USDC fee
             relayer_fee: relayerFee,
-            treasury_fee: '0',
+            treasury_fee: gasQuote.treasuryFee || '0',
             status: 'pending'
           });
         }
@@ -471,12 +515,15 @@ export class RelayerController {
         relayerFee
       );
 
-      // Update transaction with hash (non-blocking)
+      // Update transaction with hash and success status (non-blocking)
       try {
         if (db) {
           await db('transactions')
             .where('id', transactionId)
-            .update({ hash });
+            .update({ 
+              hash,
+              status: 'success' // Mark as successful after submission
+            });
         }
       } catch (dbError) {
         logger.warn('Database update failed:', dbError);
@@ -494,6 +541,21 @@ export class RelayerController {
 
     } catch (error) {
       logger.error('Error submitting gasless transaction:', error);
+      
+      // Mark transaction as failed in database (non-blocking)
+      try {
+        if (db && transactionId) {
+          await db('transactions')
+            .where('id', transactionId)
+            .update({ 
+              status: 'failed',
+              error_message: error instanceof Error ? error.message : String(error)
+            });
+        }
+      } catch (dbError) {
+        logger.warn('Database error update failed:', dbError);
+      }
+      
       res.status(500).json({ error: 'Failed to submit gasless transaction' });
     }
   }

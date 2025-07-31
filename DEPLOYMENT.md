@@ -3,10 +3,25 @@
 ## Pre-deployment Setup
 
 ### 1. Azure Resources
-- [ ] Create Azure App Service (Node.js 18)
-- [ ] Create Azure Database for PostgreSQL
-- [ ] Create Azure Cache for Redis
-- [ ] Note down connection strings
+- [x] Create Azure App Service (Node.js 18) ✅
+- [x] Create Azure Database for PostgreSQL ✅
+- [x] Create Azure Cache for Redis ✅
+- [ ] **NEXT: Collect all connection strings** 👈
+
+#### Creating Azure Cache for Redis:
+1. **Azure Portal** → "Create a resource" → Search "Azure Cache for Redis"
+2. **Basic Settings:**
+   - DNS name: `smoothsend-cache` (or your preferred name)
+   - Location: Same region as your App Service
+   - Cache type: **Basic C0** (250 MB, ₹1,200/month)
+3. **Advanced Settings:**
+   - Enable non-SSL port: **No** (keep SSL for security)
+   - Redis version: **6.0**
+   - Eviction policy: **allkeys-lru**
+4. **Networking:**
+   - Public endpoint: **Enable** (for development)
+5. **Review + Create** → **Create**
+6. **After creation:** Go to "Access keys" → Copy "Primary connection string"
 
 ### 2. Supabase Setup
 - [ ] Create Supabase project
@@ -25,7 +40,7 @@ APTOS_NETWORK=testnet
 RELAYER_PRIVATE_KEY=your_private_key
 CONTRACT_ADDRESS=your_contract_address
 APTOS_RPC_URL=https://fullnode.testnet.aptoslabs.com/v1
-DATABASE_URL=postgresql://user:pass@your-db.postgres.database.azure.com:5432/smoothsend
+DATABASE_URL=var conn= new Client({host:"smoothsend-db.postgres.database.azure.com", user:"Ved.Mohan@studentambassadors.com", password:"{your_password}", database:"postgres", port:5432, ssl:{ca:fs.readFileSync("{ca-cert filename}")}});
 REDIS_URL=redis://your-cache.redis.cache.windows.net:6380
 CORS_ORIGIN=https://your-frontend.vercel.app
 ```
@@ -36,7 +51,7 @@ cd /home/ved-mohan/Desktop/smoothsendxyz
 git add .
 git commit -m "Production deployment"
 git remote add azure https://$username@your-app.scm.azurewebsites.net:443/your-app.git
-git push azure main
+git push azure main                 
 ```
 
 ### 5. Test Backend

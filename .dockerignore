@@ -32,14 +32,14 @@ node_modules/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variables file
+# dotenv environment variables file (use Docker env vars instead)
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# Compiled TypeScript
+# Compiled TypeScript (will be built inside container)
 dist/
 
 # IDE files
@@ -59,11 +59,9 @@ Thumbs.db
 
 # Test files
 test-verify-relayer-earnings.js
-debug-startup.js
-minimal-server.js
 
-# Azure deployment files (not needed in container)
-web.config
+# Frontend directory (not needed for backend container)
+smoothsend-frontend/
 
 # Git
 .git/
@@ -72,3 +70,8 @@ web.config
 # Documentation
 *.md
 !README.md
+
+# Docker files
+docker-compose.yml
+Dockerfile
+.dockerignore

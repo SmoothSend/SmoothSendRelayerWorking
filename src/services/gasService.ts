@@ -42,14 +42,11 @@ export class GasService {
       const totalGasFeeInAPT = totalGasFeeInOctas / 1e8; // Convert octas to APT
       const gasCostInUSD = totalGasFeeInAPT * aptPrice;
       
-      // Add relayer markup (20% markup for competitive fees)
-      const relayerMarkup = 1.2; // 20% markup
-      const totalCostWithMarkup = gasCostInUSD * relayerMarkup;
-      
-      // Convert to USDC (6 decimals) and ensure minimum fee
-      // Convert gas cost to USDC with 10% markup
+      // Convert gas cost to USDC (6 decimals)
       const gasCostInUSDC = Math.ceil(gasCostInUSD * 1e6); // Convert to USDC micro units
-      const markup = 0.20; // 10% markup
+      
+      // Add relayer markup (20% markup)
+      const markup = 0.20; // 20% markup
       const markupAmount = Math.ceil(gasCostInUSDC * markup);
       const finalRelayerFee = gasCostInUSDC + markupAmount;
 
@@ -64,7 +61,7 @@ export class GasService {
         gasCostAPT: `${totalGasFeeInAPT.toFixed(6)} APT`,
         gasCostUSD: `$${gasCostInUSD.toFixed(6)}`,
         baseFeeUSDC: `${(gasCostInUSDC / 1e6).toFixed(6)} USDC`,
-        markupAmount: `${(markupAmount / 1e6).toFixed(6)} USDC (10%)`,
+        markupAmount: `${(markupAmount / 1e6).toFixed(6)} USDC (20%)`,
         finalFee: `${(finalFeeWithMinimum / 1e6).toFixed(6)} USDC`,
         minimumFee: `${(minimumFeeUSDC / 1e6).toFixed(6)} USDC`
       });

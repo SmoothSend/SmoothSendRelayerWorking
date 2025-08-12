@@ -23,12 +23,8 @@ export class GasService {
       // Get current APT price from oracle
       const aptPrice = await this.priceService.getAptPrice();
       
-      // Calculate a temporary relayer fee for simulation
-      const amountBN = new BigNumber(amount);
-      const tempRelayerFee = BigNumber.max(
-        amountBN.multipliedBy(0.001), // 0.1% fee as fallback
-        new BigNumber(1000) // 0.001 USDC minimum (6 decimals)
-      ).toString();
+      // Use minimum fee for simulation (will be replaced with actual gas-based fee)
+      const tempRelayerFee = "500"; // 0.0005 USDC minimum for simulation
 
       // Simulate transaction to get accurate gas estimate
       const gasEstimate = await this.aptosService.simulateSponsoredTransaction(
@@ -46,20 +42,20 @@ export class GasService {
       const totalGasFeeInAPT = totalGasFeeInOctas / 1e8; // Convert octas to APT
       const gasCostInUSD = totalGasFeeInAPT * aptPrice;
       
-      // Add relayer markup (50% markup for business sustainability)
-      const relayerMarkup = 1.5; // 50% markup
+      // Add relayer markup (20% markup for competitive fees)
+      const relayerMarkup = 1.2; // 20% markup
       const totalCostWithMarkup = gasCostInUSD * relayerMarkup;
       
       // Convert to USDC (6 decimals) and ensure minimum fee
-      const calculatedRelayerFeeUSDC = Math.ceil(totalCostWithMarkup * 1e6);
-      const minimumFeeUSDC = 1000; // 0.001 USDC minimum
-      const gasBasedFee = Math.max(calculatedRelayerFeeUSDC, minimumFeeUSDC);
+      // Convert gas cost to USDC with 10% markup
+      const gasCostInUSDC = Math.ceil(gasCostInUSD * 1e6); // Convert to USDC micro units
+      const markup = 0.20; // 10% markup
+      const markupAmount = Math.ceil(gasCostInUSDC * markup);
+      const finalRelayerFee = gasCostInUSDC + markupAmount;
 
-      // For comparison, calculate the simple percentage-based fee
-      const percentageBasedFee = parseInt(tempRelayerFee);
-
-      // Use whichever is higher: gas-based fee or percentage-based fee
-      const finalRelayerFee = Math.max(gasBasedFee, percentageBasedFee);
+      // Ensure minimum fee of 0.0005 USDC
+      const minimumFeeUSDC = 500; // 0.0005 USDC
+      const finalFeeWithMinimum = Math.max(finalRelayerFee, minimumFeeUSDC);
 
       logger.info('� PRODUCTION Gas Fee Calculation', {
         aptPrice: `$${aptPrice.toFixed(4)}`,
@@ -67,11 +63,10 @@ export class GasService {
         gasPricePerUnit,
         gasCostAPT: `${totalGasFeeInAPT.toFixed(6)} APT`,
         gasCostUSD: `$${gasCostInUSD.toFixed(6)}`,
-        withMarkup: `$${totalCostWithMarkup.toFixed(6)} (+50%)`,
-        gasBasedFeeUSDC: `${(gasBasedFee / 1e6).toFixed(6)} USDC`,
-        percentageBasedFee: `${(percentageBasedFee / 1e6).toFixed(6)} USDC`,
-        finalFee: `${(finalRelayerFee / 1e6).toFixed(6)} USDC`,
-        strategy: gasBasedFee > percentageBasedFee ? 'gas-based' : 'percentage-based'
+        baseFeeUSDC: `${(gasCostInUSDC / 1e6).toFixed(6)} USDC`,
+        markupAmount: `${(markupAmount / 1e6).toFixed(6)} USDC (10%)`,
+        finalFee: `${(finalFeeWithMinimum / 1e6).toFixed(6)} USDC`,
+        minimumFee: `${(minimumFeeUSDC / 1e6).toFixed(6)} USDC`
       });
 
       // Calculate total gas fee for frontend display

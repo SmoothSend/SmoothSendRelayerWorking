@@ -8,6 +8,7 @@ import { initRedis } from './database/redis';
 import { db } from './database/postgres';
 import relayerRoutes from './routes/relayer';
 import cron from 'node-cron';
+import { PriceService } from './services/priceService';
 
 const app = express();
 
@@ -104,6 +105,18 @@ async function startServer() {
         // Schedule cleanup job (runs daily at midnight)
         cron.schedule('0 0 * * *', cleanupOldTransactions);
         logger.info('Cleanup job scheduled');
+        
+        // Keep service alive by fetching price every 10 minutes
+        const priceService = new PriceService();
+        cron.schedule('*/10 * * * *', async () => {
+          try {
+            await priceService.getAptPrice();
+            logger.info('Keep-alive: Price fetched');
+          } catch (error) {
+            logger.warn('Keep-alive price fetch failed:', error);
+          }
+        });
+        logger.info('Keep-alive job scheduled (every 10 minutes)');
       } else {
         logger.info('No DATABASE_URL provided - running without database (transaction tracking disabled)');
       }

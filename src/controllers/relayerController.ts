@@ -371,16 +371,12 @@ export class RelayerController {
 
       const { fromAddress, toAddress, amount, coinType }: GaslessQuoteRequest = value;
 
-      // Calculate gas-based relayer fee (base gas cost + 20% markup)
-      const gasQuote = await this.gasService.calculateGasQuote(
-        fromAddress,
-        toAddress,
-        amount,
-        coinType
-      );
-
+      // Calculate relayer fee (0.1% of amount or minimum 0.001 USDC)
       const amountBN = new BigNumber(amount);
-      const relayerFee = new BigNumber(gasQuote.relayerFee);
+      const relayerFee = BigNumber.max(
+        amountBN.multipliedBy(0.001), // 0.1% fee
+        new BigNumber(1000) // 0.001 USDC minimum (6 decimals)
+      );
 
       // Check user has enough USDC for transaction + fee
       const userBalance = await this.aptosService.getCoinBalance(fromAddress, coinType);
@@ -401,15 +397,23 @@ export class RelayerController {
         return res.status(503).json({ error: 'Service temporarily unavailable' });
       }
 
+      // Get gas estimate
+      const quote = await this.gasService.calculateGasQuote(
+        fromAddress,
+        toAddress,
+        amount,
+        coinType
+      );
+
       // Return transaction details for user to sign
       res.json({
         success: true,
         quote: {
           relayerFee: relayerFee.toString(),
-          gasUnits: gasQuote.gasUnits,
-          gasPricePerUnit: gasQuote.gasPricePerUnit,
-          totalGasFee: gasQuote.totalGasFee,
-          aptPrice: gasQuote.aptPrice
+          gasUnits: quote.gasUnits,
+          gasPricePerUnit: quote.gasPricePerUnit,
+          totalGasFee: quote.totalGasFee,
+          aptPrice: quote.aptPrice
         },
         transactionData: {
           function: `${config.contractAddress}::smoothsend::send_with_fee`,
@@ -418,7 +422,7 @@ export class RelayerController {
             this.aptosService.getRelayerAddress(), // relayer gets fee
             toAddress, // recipient
             amount, // amount to send
-            relayerFee.toString() // relayer fee (base gas + 20%)
+            relayerFee.toString() // relayer fee
           ]
         },
         message: 'Quote ready. User should sign transaction with withFeePayer: true'
@@ -476,9 +480,6 @@ export class RelayerController {
         coinType
       );
 
-      // Always use backend-computed (base gas + 20%) fee to prevent tampering
-      const relayerFeeToCharge = gasQuote.relayerFee;
-
       // Create transaction record (non-blocking)
       transactionId = uuidv4();
       try {
@@ -493,8 +494,8 @@ export class RelayerController {
             gas_price: gasQuote.gasPricePerUnit,
             total_gas_fee: gasQuote.totalGasFee,
             apt_price: gasQuote.aptPrice.toString(),
-            usdc_fee: gasQuote.usdcFee, // Actual oracle-based USDC fee (base gas + 20%)
-            relayer_fee: relayerFeeToCharge,
+            usdc_fee: gasQuote.usdcFee, // Actual oracle-based USDC fee
+            relayer_fee: relayerFee,
             treasury_fee: gasQuote.treasuryFee || '0',
             status: 'pending'
           });
@@ -511,7 +512,7 @@ export class RelayerController {
         toAddress,
         amount,
         coinType,
-        relayerFeeToCharge
+        relayerFee
       );
 
       // Update transaction with hash and success status (non-blocking)
@@ -534,7 +535,7 @@ export class RelayerController {
         hash,
         gasFeePaidBy: 'relayer',
         userPaidAPT: false,
-        relayerFee: relayerFeeToCharge,
+        relayerFee,
         message: 'Gasless transaction submitted! User pays 0 APT, relayer sponsors all gas.'
       });
 

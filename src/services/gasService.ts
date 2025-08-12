@@ -42,7 +42,7 @@ export class GasService {
       const totalGasFeeInAPT = totalGasFeeInOctas / 1e8; // Convert octas to APT
       const gasCostInUSD = totalGasFeeInAPT * aptPrice;
       
-      // Convert gas cost to USDC (6 decimals)
+      // Convert gas cost to USDC (6 decimals)o
       const gasCostInUSDC = Math.ceil(gasCostInUSD * 1e6); // Convert to USDC micro units
       
       // Add relayer markup (20% markup)

@@ -1,28 +1,4 @@
-export interface TransferRequest {
-  fromAddress: string;
-  toAddress: string;
-  amount: string;
-  coinType: string;
-}
-
-export interface SponsoredTransferRequest {
-  fromAddress: string;
-  toAddress: string;
-  amount: string;
-  coinType: string;
-  relayerFee: string;
-  userSignature?: string; // For when user provides signature
-}
-
-export interface SponsoredTransactionBuild {
-  fromAddress: string;
-  toAddress: string;
-  amount: string;
-  coinType: string;
-  relayerFee: string;
-}
-
-// NEW: Proper gasless flow interfaces
+// Gasless transaction interfaces
 export interface GaslessQuoteRequest {
   fromAddress: string;
   toAddress: string;

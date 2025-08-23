@@ -3,18 +3,13 @@ import { AptosService } from '../services/aptosService';
 import { PriceService } from '../services/priceService';
 import { GasService } from '../services/gasService';
 import { 
-  transferRequestSchema, 
-  sponsoredTransferRequestSchema, 
-  sponsoredBuildRequestSchema,
+  transferRequestSchema,
   gaslessQuoteRequestSchema,
   gaslessSubmitRequestSchema,
   addressSchema,
   gaslessWithWalletRequestSchema
 } from '../utils/validation';
 import { 
-  TransferRequest, 
-  SponsoredTransferRequest, 
-  SponsoredTransactionBuild,
   GaslessQuoteRequest,
   GaslessSubmitRequest
 } from '../types';
@@ -38,7 +33,12 @@ export class RelayerController {
         return res.status(400).json({ error: error.details[0].message });
       }
 
-      const { fromAddress, toAddress, amount, coinType }: TransferRequest = value;
+      const { fromAddress, toAddress, amount, coinType }: {
+        fromAddress: string;
+        toAddress: string;
+        amount: string;
+        coinType: string;
+      } = value;
 
       // Check if amount exceeds maximum
       const amountBN = new BigNumber(amount);
@@ -70,117 +70,13 @@ export class RelayerController {
   }
 
   // ⚠️ DISABLED FOR PRODUCTION SAFETY: This endpoint provides FREE transactions
-  // User pays $0, relayer pays 100% of gas costs = financial suicide
-  // Use getGaslessQuote() instead where user pays USDC fees
-  async getSponsoredQuote(req: Request, res: Response) {
-    return res.status(410).json({ 
-      error: 'Endpoint disabled for production safety',
-      reason: 'This endpoint provided free transactions (user pays $0)',
-      alternative: 'Use /gasless/quote endpoint where user pays USDC fees',
-      documentation: 'See /gasless/quote + /gasless/submit flow'
-    });
-  }
-
-  // ⚠️ DISABLED FOR PRODUCTION SAFETY: This endpoint provides FREE transactions
-  async buildSponsoredTransaction(req: Request, res: Response) {
-    return res.status(410).json({ 
-      error: 'Endpoint disabled for production safety',
-      reason: 'This endpoint was part of free transaction flow',
-      alternative: 'Use /gasless/quote + /gasless/submit with USDC fees'
-    });
-  }
-
-  // ⚠️ DISABLED FOR PRODUCTION SAFETY: This endpoint provides FREE transactions
-  async submitSponsoredTransaction(req: Request, res: Response) {
-    return res.status(410).json({ 
-      error: 'Endpoint disabled for production safety',
-      reason: 'User paid $0, relayer paid 100% gas costs = financial suicide',
-      alternative: 'Use /gasless/submit where user pays USDC fees'
-    });
-  }
-
   async submitTransaction(req: Request, res: Response) {
-    try {
-      const { error, value } = transferRequestSchema.validate(req.body);
-      if (error) {
-        return res.status(400).json({ error: error.details[0].message });
-      }
-
-      const { fromAddress, toAddress, amount, coinType }: TransferRequest = value;
-
-      // Check relayer APT balance
-      const relayerBalance = await this.aptosService.getAccountBalance(
-        this.aptosService.getRelayerAddress()
-      );
-      if (new BigNumber(relayerBalance).lt(config.minAptBalance)) {
-        logger.error('Relayer APT balance too low:', relayerBalance);
-        return res.status(503).json({ error: 'Service temporarily unavailable' });
-      }
-
-      // Get fresh gas quote
-      const quote = await this.gasService.calculateGasQuote(
-        fromAddress,
-        toAddress,
-        amount,
-        coinType
-      );
-
-      // Create transaction record (non-blocking)
-      const transactionId = uuidv4();
-      try {
-        if (db) {
-          await db('transactions').insert({
-            id: transactionId,
-            from_address: fromAddress,
-            to_address: toAddress,
-            amount,
-            coin_type: coinType,
-            gas_units: quote.gasUnits,
-            gas_price: quote.gasPricePerUnit,
-            total_gas_fee: quote.totalGasFee,
-            apt_price: quote.aptPrice,
-            usdc_fee: quote.usdcFee,
-            relayer_fee: quote.relayerFee,
-            treasury_fee: quote.treasuryFee,
-            status: 'pending'
-          });
-        } else {
-          logger.debug('Database not configured - transaction not tracked');
-        }
-      } catch (dbError) {
-        logger.warn('Database insert failed, continuing without tracking:', dbError);
-      }
-
-      // Submit the sponsored transaction
-      const hash = await this.aptosService.submitSponsoredTransfer(
-        fromAddress,
-        toAddress,
-        amount,
-        coinType,
-        quote.gasUnits,
-        quote.gasPricePerUnit
-      );
-
-      // Update transaction with hash (non-blocking)
-      try {
-        if (db) {
-          await db('transactions')
-            .where('id', transactionId)
-            .update({ hash });
-        }
-      } catch (dbError) {
-        logger.warn('Database update failed:', dbError);
-      }
-
-      res.json({ 
-        transactionId,
-        hash,
-        quote
-      });
-    } catch (error) {
-      logger.error('Error submitting transaction:', error);
-      res.status(500).json({ error: 'Failed to submit transaction' });
-    }
+    return res.status(410).json({ 
+      error: 'Endpoint disabled for production safety',
+      reason: 'This endpoint called submitSponsoredTransfer which provided free transactions',
+      alternative: 'Use /gasless/quote + /gasless/submit where user pays USDC fees',
+      impact: 'Free transactions would bankrupt the relayer'
+    });
   }
 
   async getTransactionStatus(req: Request, res: Response) {
@@ -371,12 +267,30 @@ export class RelayerController {
 
       const { fromAddress, toAddress, amount, coinType }: GaslessQuoteRequest = value;
 
-      // Calculate relayer fee (0.1% of amount or minimum 0.001 USDC)
+      // HYBRID FEE CALCULATION: max(0.1% of amount, oracle-based gas cost + 20% markup)
       const amountBN = new BigNumber(amount);
-      const relayerFee = BigNumber.max(
+      
+      // Get oracle-based gas fee from gasService
+      const gasQuote = await this.gasService.calculateGasQuote(fromAddress, toAddress, amount, coinType);
+      const oracleBasedFee = new BigNumber(gasQuote.relayerFee);
+      
+      // Simple percentage fee (0.1% of amount with 0.001 USDC minimum)
+      const percentageFee = BigNumber.max(
         amountBN.multipliedBy(0.001), // 0.1% fee
         new BigNumber(1000) // 0.001 USDC minimum (6 decimals)
       );
+      
+      // Hybrid: Use the HIGHER of the two fees (protects relayer, fair to users)
+      const relayerFee = BigNumber.max(percentageFee, oracleBasedFee);
+      
+      // Log hybrid fee decision for monitoring
+      logger.info('🔄 Hybrid Fee Calculation', {
+        amount: `${amountBN.div(1e6).toFixed(6)} USDC`,
+        percentageFee: `${percentageFee.div(1e6).toFixed(6)} USDC (0.1%)`,
+        oracleBasedFee: `${oracleBasedFee.div(1e6).toFixed(6)} USDC (oracle)`,
+        finalFee: `${relayerFee.div(1e6).toFixed(6)} USDC`,
+        winner: percentageFee.gte(oracleBasedFee) ? 'percentage' : 'oracle'
+      });
 
       // Check user has enough USDC for transaction + fee
       const userBalance = await this.aptosService.getCoinBalance(fromAddress, coinType);
@@ -397,13 +311,8 @@ export class RelayerController {
         return res.status(503).json({ error: 'Service temporarily unavailable' });
       }
 
-      // Get gas estimate
-      const quote = await this.gasService.calculateGasQuote(
-        fromAddress,
-        toAddress,
-        amount,
-        coinType
-      );
+      // Get gas estimate (already calculated above for hybrid fee)
+      const quote = gasQuote;
 
       // Return transaction details for user to sign
       res.json({
@@ -560,25 +469,7 @@ export class RelayerController {
     }
   }
 
-  // ⚠️ DISABLED FOR PRODUCTION SAFETY: This endpoint provides FREE transactions
-  async submitProperSponsoredTransaction(req: Request, res: Response) {
-    return res.status(410).json({ 
-      error: 'Endpoint disabled for production safety',
-      reason: 'User paid $0 APT, relayer paid 100% gas costs',
-      alternative: 'Use /gasless/quote + /gasless/submit with user USDC fees',
-      impact: 'This endpoint would bankrupt the relayer in production'
-    });
-  }
-
-  // ⚠️ DISABLED FOR PRODUCTION SAFETY: This endpoint provides FREE transactions
-  async submitTrueGaslessTransaction(req: Request, res: Response) {
-    return res.status(410).json({ 
-      error: 'Endpoint disabled for production safety',
-      reason: 'User paid $0, relayer absorbed 100% of gas costs',
-      alternative: 'Use /gasless/quote + /gasless/submit where user pays USDC fees',
-      economics: 'Free transactions = relayer bankruptcy'
-    });
-  }
+  // The following methods are SAFE and working - user pays USDC fees:
 
   async submitGaslessWithWallet(req: Request, res: Response): Promise<Response> {
     try {
@@ -601,13 +492,14 @@ export class RelayerController {
       });
 
       // Submit the gasless transaction with proper user signature handling
-      const transactionHash = await this.aptosService.submitGaslessWithWalletSignature(
+      const transactionHash = await this.aptosService.submitGaslessWithSponsor(
+        null, // transaction will be rebuilt on backend
+        userSignature, // user signature from wallet
         fromAddress,
         toAddress, 
         amount,
         coinType,
-        relayerFee,
-        userSignature
+        relayerFee
       );
 
       // Try to store in database (non-blocking)

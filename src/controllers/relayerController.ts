@@ -18,6 +18,7 @@ import { logger } from '../utils/logger';
 import { v4 as uuidv4 } from 'uuid';
 import BigNumber from 'bignumber.js';
 import { db } from '../database/postgres';
+import { safetyMonitor } from '../services/safetyMonitor';
 
 export class RelayerController {
   constructor(
@@ -363,6 +364,20 @@ export class RelayerController {
         relayerFee 
       }: GaslessSubmitRequest = value;
 
+      // BETA SAFETY: Validate transaction limits
+      const safetyCheck = await safetyMonitor.validateTransaction(fromAddress, amount);
+      if (!safetyCheck.allowed) {
+        logger.warn('🚫 BETA SAFETY: Transaction blocked', {
+          from: fromAddress,
+          amount: (parseInt(amount) / 1e6).toFixed(3) + ' USDC',
+          reason: safetyCheck.reason
+        });
+        return res.status(400).json({ 
+          error: `Beta Safety Limit: ${safetyCheck.reason}`,
+          betaInfo: 'Currently in beta with daily limits. Contact support for higher limits.'
+        });
+      }
+
       logger.info('🎯 GASLESS SUBMIT: Proper two-signature flow', {
         from: fromAddress,
         to: toAddress,
@@ -437,6 +452,9 @@ export class RelayerController {
       } catch (dbError) {
         logger.warn('Database update failed:', dbError);
       }
+
+      // BETA SAFETY: Record successful transaction for monitoring
+      await safetyMonitor.recordTransaction(fromAddress, amount);
 
       res.json({ 
         success: true,
@@ -549,6 +567,31 @@ export class RelayerController {
         success: false, 
         error: 'Failed to submit gasless transaction' 
       });
+    }
+  }
+
+  // BETA SAFETY: Get current safety statistics
+  async getSafetyStats(req: Request, res: Response) {
+    try {
+      const stats = safetyMonitor.getStats();
+      res.json({
+        success: true,
+        betaLimits: {
+          maxSingleTransaction: stats.maxSingleTransaction,
+          maxUserDaily: stats.maxUserDaily,
+          maxDailyVolume: stats.maxDailyVolume,
+          currentDailyVolume: stats.dailyVolume
+        },
+        usage: {
+          dailyVolumeUsed: `${stats.dailyVolume.toFixed(2)} USDC`,
+          dailyVolumeRemaining: `${(stats.maxDailyVolume - stats.dailyVolume).toFixed(2)} USDC`,
+          utilizationPercentage: `${((stats.dailyVolume / stats.maxDailyVolume) * 100).toFixed(1)}%`
+        },
+        status: stats.dailyVolume > (stats.maxDailyVolume * 0.8) ? 'warning' : 'normal'
+      });
+    } catch (error) {
+      logger.error('Error getting safety stats:', error);
+      res.status(500).json({ error: 'Failed to get safety statistics' });
     }
   }
 } 

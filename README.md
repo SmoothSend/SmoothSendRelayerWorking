@@ -637,3 +637,14 @@ npm run perf-test
 ✅ **Scalable**: Deploy to cloud in minutes  
 
 **🚀 Start earning from gasless transactions today!**
+
+## 📚 Documentation
+
+For detailed documentation, guides, and strategies, see the [`docs/`](./docs/) directory:
+
+- **[📋 Product Readiness](./docs/PRODUCT_READINESS.md)** - 85% ready for beta launch
+- **[🚀 Beta Launch Guide](./docs/BETA_LAUNCH_READY.md)** - Complete launch checklist  
+- **[👥 Beta Testing](./docs/BETA_TESTER_FORM.md)** - User recruitment forms
+- **[🏗️ Architecture](./docs/BACKEND_ARCHITECTURE.md)** - Technical system design
+- **[🛡️ Safety Features](./docs/SAFETY_STATS_EXPLAINED.md)** - Monitoring & limits
+- **[📋 Full Documentation Index](./docs/README.md)** - Complete docs overview

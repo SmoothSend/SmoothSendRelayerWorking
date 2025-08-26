@@ -73,4 +73,9 @@ router.get('/stats', (req, res) =>
   relayerController.getStats(req, res)
 );
 
+// BETA SAFETY: Safety monitoring endpoint
+router.get('/safety-stats', (req, res) => 
+  relayerController.getSafetyStats(req, res)
+);
+
 export default router; 

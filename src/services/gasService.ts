@@ -17,11 +17,17 @@ export class GasService {
     coinType: string
   ): Promise<TransactionQuote> {
     try {
-      // PRODUCTION: Calculate relayer fee based on actual gas cost + oracle price
-      logger.info('🔥 PRODUCTION: Calculating gas-based fee using APT price oracle');
+      // Calculate transaction amount in USD for smart oracle usage
+      const amountUSD = parseInt(amount) / 1e6; // Convert USDC to USD
       
-      // Get current APT price from oracle
-      const aptPrice = await this.priceService.getAptPrice();
+      // SMART ORACLE: Use oracle only for large transactions
+      logger.info('🔥 PRODUCTION: Smart oracle calculation', {
+        transactionAmount: `$${amountUSD}`,
+        strategy: amountUSD >= 1000 ? 'Oracle (high value)' : 'Fixed price (beta/low value)'
+      });
+      
+      // Get APT price with smart oracle logic
+      const aptPrice = await this.priceService.getAptPrice(amountUSD);
       
       // Use minimum fee for simulation (will be replaced with actual gas-based fee)
       const tempRelayerFee = "500"; // 0.0005 USDC minimum for simulation

@@ -37,8 +37,8 @@ export const gaslessSubmitRequestSchema = Joi.object({
 
 export const gaslessWithWalletRequestSchema = Joi.object({
   userSignature: Joi.object({
-    signature: Joi.string().required(),
-    publicKey: Joi.string().required()
+    signature: Joi.string().min(1).required(),
+    publicKey: Joi.string().min(1).required()
   }).required(),
   fromAddress: Joi.string().pattern(/^0x[a-fA-F0-9]{64}$/).required(),
   toAddress: Joi.string().pattern(/^0x[a-fA-F0-9]{64}$/).required(),

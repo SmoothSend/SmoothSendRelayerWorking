@@ -456,10 +456,11 @@ export class AptosService {
         throw new Error('User signature is required');
       }
 
-      // IMPORTANT: Rebuild the transaction on backend using SIMPLE with fee payer
-      // Your Move contract uses entry fun with single signer, not multi-agent
-      const freshTransaction = await this.aptos.transaction.build.simple({
+      // IMPORTANT: Rebuild the transaction using MULTI-AGENT with fee payer
+      // This pattern is proven to work in your existing codebase
+      const freshTransaction = await this.aptos.transaction.build.multiAgent({
         sender: fromAddress,
+        secondarySignerAddresses: [],
         data: {
           function: `${config.contractAddress}::smoothsend::send_with_fee`,
           typeArguments: [coinType],
@@ -470,18 +471,20 @@ export class AptosService {
             relayerFee // relayer_fee
           ]
         },
+        withFeePayer: true,
         options: {
           maxGasAmount: 200000,
           gasUnitPrice: 100
-        },
-        withFeePayer: true // Enable fee payer pattern
+        }
       });
 
       logger.info('✅ FRESH TRANSACTION BUILT', {
         contract: `${config.contractAddress}::smoothsend::send_with_fee`,
         sender: fromAddress,
         feePayer: 'relayer',
-        pattern: 'Simple transaction with fee payer (matches Move contract)'
+        pattern: 'Simple transaction with fee payer (matches Move contract)',
+        hasFeePayer: !!freshTransaction.feePayerAddress,
+        transactionKeys: Object.keys(freshTransaction)
       });
 
       // PRODUCTION: Verify user signature and reconstruct AccountAuthenticator
@@ -663,6 +666,12 @@ export class AptosService {
       }
 
       // Relayer signs as fee payer (pays ALL gas)
+      logger.info('🔍 SIGNING DEBUG - freshTransaction shape', {
+        keys: Object.keys(freshTransaction),
+        hasFeePayer: !!freshTransaction.feePayerAddress,
+        typeOf: typeof freshTransaction
+      });
+
       const feePayerAuthenticator = this.aptos.transaction.signAsFeePayer({
         signer: this.relayerAccount,
         transaction: freshTransaction
@@ -671,13 +680,14 @@ export class AptosService {
       logger.info('✅ DUAL SIGNATURES READY', {
         userSignature: 'USDC authorization ✅',
         relayerSignature: 'Gas payment ✅',
-        pattern: 'Simple transaction with fee payer'
+        pattern: 'Multi-agent transaction with fee payer'
       });
 
-      // Submit with both signatures using SIMPLE (matches your Move contract)
-      const result = await this.aptos.transaction.submit.simple({
+      // Submit with both signatures using MULTI-AGENT (matches the build pattern)
+      const result = await this.aptos.transaction.submit.multiAgent({
         transaction: freshTransaction,
         senderAuthenticator: userAuthenticator, // User's signature
+        additionalSignersAuthenticators: [], // No additional signers
         feePayerAuthenticator: feePayerAuthenticator // Relayer pays ALL gas
       });
 
@@ -686,7 +696,7 @@ export class AptosService {
         userPaidAPT: '0 APT ✅',
         relayerPaidGas: 'ALL gas fees ✅',
         usdcTransfer: 'SmoothSend contract ✅',
-        pattern: 'Simple fee payer gasless (matches Move entry function) ✅'
+        pattern: 'Multi-agent fee payer gasless (matches Move entry function) ✅'
       });
 
       return result.hash;

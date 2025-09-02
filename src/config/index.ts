@@ -19,5 +19,12 @@ export const config = {
   rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000'),
   rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
   priceCacheTtl: parseInt(process.env.PRICE_CACHE_TTL || '30'),
-  gasEstimateBuffer: parseInt(process.env.GAS_ESTIMATE_BUFFER || '20')
+  gasEstimateBuffer: parseInt(process.env.GAS_ESTIMATE_BUFFER || '20'),
+  
+  // Security Configuration
+  allowedOrigins: process.env.ALLOWED_ORIGINS || 'http://localhost:3001',
+  corsCredentials: process.env.CORS_CREDENTIALS === 'true',
+  maxRequestSize: process.env.MAX_REQUEST_SIZE || '1mb',
+  enableSecurityHeaders: process.env.ENABLE_SECURITY_HEADERS !== 'false',
+  hstsMaxAge: parseInt(process.env.HSTS_MAX_AGE || '31536000')
 }; 

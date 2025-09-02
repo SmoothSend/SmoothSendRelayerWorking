@@ -1,24 +1,4 @@
-/*
- * 🔧 DEVELOPMENT MODE ENABLED - REMOVE FOR PRODUCTION
- * 
- * This file contains development-friendly modifications that allow fallback signatures
- * when wallets provide empty public keys. These changes enable testing without full
- * wallet integration but should be removed for production deployment.
- * 
- * 📝 PRODUCTION DEPLOYMENT CHECKLIST:
- * 1. Search for "🔧 DEVELOPMENT MODE" comments (2 locations)
- * 2. Replace development validation blocks with production validation
- * 3. Remove this entire comment block
- * 
- * 🚨 SECURITY IMPACT: 
- * - Development mode allows fallback to test signatures
- * - Production mode requires real wallet signatures only
- * - Fallback still validates address ownership (secure)
- * 
- * 🔍 WHAT TO CHANGE:
- * Look for blocks marked with "🔧 DEVELOPMENT MODE" and follow the 
- * "📝 TO REMOVE FOR PRODUCTION" instructions in each location.
- */
+
 
 import { 
   Aptos, 
@@ -54,10 +34,6 @@ export class AptosService {
     const relayerPrivateKey = new Ed25519PrivateKey(config.relayerPrivateKey);
     this.relayerAccount = Account.fromPrivateKey({ privateKey: relayerPrivateKey });
 
-    // 🔧 DEVELOPMENT MODE WARNING
-    logger.warn('⚠️  DEVELOPMENT MODE: Fallback signatures enabled - remove for production!');
-    logger.warn('📝 Search for "🔧 DEVELOPMENT MODE" comments to remove development features');
-
     logger.info(`Initialized Aptos service for ${config.aptosNetwork}`);
     logger.info(`Relayer address: ${this.relayerAccount.accountAddress.toString()}`);
   }
@@ -82,18 +58,8 @@ export class AptosService {
       });
 
       // Step 1: Validate input
-      // 🔧 DEVELOPMENT MODE: Allow empty publicKey to trigger fallback
-      // 📝 TO REMOVE FOR PRODUCTION: Replace this entire block with:
-      //    if (!userSignatureData.signature || !userSignatureData.publicKey) {
-      //      throw new Error('Both signature and publicKey are required from wallet');
-      //    }
-      // 🚨 PRODUCTION SECURITY: Uncomment above 3 lines and delete the block below
-      if (!userSignatureData.signature) {
-        throw new Error('Signature is required from wallet');
-      }
-      if (!userSignatureData.publicKey) {
-        logger.warn('🔧 DEVELOPMENT: Empty publicKey will trigger fallback mode');
-        throw new Error('Empty publicKey - triggering fallback for development');
+      if (!userSignatureData.signature || !userSignatureData.publicKey) {
+        throw new Error('Both signature and publicKey are required from wallet');
       }
 
       // Step 2: Reconstruct public key
@@ -560,102 +526,56 @@ export class AptosService {
           signatureProvided: !!userSignature.signature
         });
 
-        // 🔧 DEVELOPMENT MODE: Allow empty publicKey to trigger fallback within try/catch
-        // 📝 TO REMOVE FOR PRODUCTION: Replace this entire block with:
-        //    if (!userSignature.signature || !userSignature.publicKey) {
-        //      throw new Error('Both signature and publicKey are required from wallet');
-        //    }
-        // 🚨 PRODUCTION SECURITY: Uncomment above 3 lines and delete the block below
-        if (!userSignature.signature) {
-          throw new Error('Signature is required from wallet');
+        // Production validation: Both signature and publicKey are required
+        if (!userSignature.signature || !userSignature.publicKey) {
+          throw new Error('Both signature and publicKey are required from wallet');
         }
 
-        try {
-          // Validate publicKey inside try block to allow fallback
-          if (!userSignature.publicKey) {
-            logger.warn('🔧 DEVELOPMENT: Empty publicKey will trigger fallback mode');
-            throw new Error('Empty publicKey - triggering fallback for development');
-          }
+        // REAL SIGNATURE VERIFICATION PROCESS
+        logger.info('🔍 VERIFYING: Reconstructing user signature from wallet data');
 
-          // REAL SIGNATURE VERIFICATION PROCESS
-          logger.info('🔍 VERIFYING: Reconstructing user signature from wallet data');
+        // Step 1: Extract signature and public key from wallet
+        const publicKey = new Ed25519PublicKey(userSignature.publicKey);
+        
+        // Step 2: Verify the public key corresponds to the fromAddress
+        const derivedAddress = publicKey.authKey().derivedAddress().toString();
+        
+        logger.info('🔍 ADDRESS VERIFICATION:', {
+          providedAddress: fromAddress,
+          derivedFromPublicKey: derivedAddress,
+          matches: derivedAddress === fromAddress
+        });
 
-          // Step 1: Extract signature and public key from wallet
-          const publicKey = new Ed25519PublicKey(userSignature.publicKey);
-          
-          // Step 2: Verify the public key corresponds to the fromAddress
-          // For now, create account from private key to derive address  
-          // Note: In production, validate the public key against the fromAddress
-          const derivedAddress = publicKey.authKey().derivedAddress().toString();
-          
-          logger.info('� ADDRESS VERIFICATION:', {
-            providedAddress: fromAddress,
-            derivedFromPublicKey: derivedAddress,
-            matches: derivedAddress === fromAddress
-          });
-
-          if (derivedAddress !== fromAddress) {
-            // For development, log warning but continue
-            logger.warn('Address mismatch in development mode - would fail in production');
-          }
-
-          // Step 3: Reconstruct the AccountAuthenticator from wallet signature
-          // Parse the signature (remove 0x prefix and extract components)
-          const signatureBytes = userSignature.signature.replace('0x', '');
-          
-          // For AccountAuthenticator, we need to extract the actual signature part
-          // The signature format from wallet includes metadata, we need just the signature
-          let actualSignature: Ed25519Signature;
-          
-          if (signatureBytes.length > 128) {
-            // Wallet signature format includes public key + signature
-            // Extract the last 64 bytes as the signature
-            const sigPart = signatureBytes.slice(-128); // Last 64 bytes (128 hex chars)
-            actualSignature = new Ed25519Signature(`0x${sigPart}`);
-          } else {
-            // Direct signature format
-            actualSignature = new Ed25519Signature(userSignature.signature);
-          }
-
-          // Step 4: Create AccountAuthenticator
-          userAuthenticator = new AccountAuthenticatorEd25519(publicKey, actualSignature);
-
-          logger.info('✅ WALLET SIGNATURE VERIFIED:', {
-            fromAddress,
-            publicKeyValid: true,
-            signatureReconstructed: true,
-            mode: 'PRODUCTION_WALLET_VERIFICATION'
-          });
-
-        } catch (verificationError: any) {
-          logger.error('❌ Signature verification failed:', verificationError);
-          
-          // FALLBACK: For development/testing, use testnet account
-          logger.warn('🔧 FALLBACK: Using testnet account for development');
-          
-          const testAccount = Account.fromPrivateKey({ 
-            privateKey: new Ed25519PrivateKey("0xdf00af9a20872f041d821b0d9391b147431edb275a41b2b11d32922fefa6d098")
-          });
-
-          if (testAccount.accountAddress.toString() !== fromAddress) {
-            throw new Error(`Address mismatch: Expected ${fromAddress}, got ${testAccount.accountAddress.toString()}`);
-          }
-
-          // For development/testing, create signature using test account
-          const testSignature = this.aptos.transaction.sign({
-            signer: testAccount,
-            transaction: freshTransaction
-          });
-
-          // Extract Ed25519 components from the generic AccountAuthenticator
-          if (testSignature.isEd25519()) {
-            userAuthenticator = testSignature as AccountAuthenticatorEd25519;
-          } else {
-            throw new Error('Expected Ed25519 signature but got different type');
-          }
-
-          logger.info('✅ Fallback signature created for development');
+        if (derivedAddress !== fromAddress) {
+          throw new Error(`Address mismatch: Public key does not match expected address ${fromAddress}`);
         }
+
+        // Step 3: Reconstruct the AccountAuthenticator from wallet signature
+        // Parse the signature (remove 0x prefix and extract components)
+        const signatureBytes = userSignature.signature.replace('0x', '');
+        
+        // For AccountAuthenticator, we need to extract the actual signature part
+        let actualSignature: Ed25519Signature;
+        
+        if (signatureBytes.length > 128) {
+          // Wallet signature format includes public key + signature
+          // Extract the last 64 bytes as the signature
+          const sigPart = signatureBytes.slice(-128); // Last 64 bytes (128 hex chars)
+          actualSignature = new Ed25519Signature(`0x${sigPart}`);
+        } else {
+          // Direct signature format
+          actualSignature = new Ed25519Signature(userSignature.signature);
+        }
+
+        // Step 4: Create AccountAuthenticator
+        userAuthenticator = new AccountAuthenticatorEd25519(publicKey, actualSignature);
+
+        logger.info('✅ WALLET SIGNATURE VERIFIED:', {
+          fromAddress,
+          publicKeyValid: true,
+          signatureReconstructed: true,
+          mode: 'PRODUCTION_WALLET_VERIFICATION'
+        });
 
       } catch (signatureError: any) {
         logger.error('❌ Wallet signature processing failed:', signatureError);
@@ -698,5 +618,66 @@ export class AptosService {
 
     
   // NEW: Proper gasless flow - accept user transaction and signature, add relayer sponsorship
+
+  /**
+   * Submit transaction with deserialized data from client
+   * This follows the Aptos Gas Station pattern for proper wallet integration
+   * @param transaction Deserialized SimpleTransaction from client
+   * @param senderAuthenticator User's signature authenticator
+   * @returns Transaction result with hash and status
+   */
+  async submitTransactionWithDeserializedData(
+    transaction: any,
+    senderAuthenticator: any
+  ) {
+    try {
+      logger.info('🔐 ADDING FEE PAYER: Adding relayer signature as fee payer');
+
+      // Add fee payer signature using the relayer account
+      const feePayerAuthenticator = this.aptos.transaction.signAsFeePayer({
+        signer: this.relayerAccount,
+        transaction: transaction
+      });
+
+      logger.info('🚀 SUBMITTING: Transaction with both signatures');
+
+      // Submit with both signatures
+      const response = await this.aptos.transaction.submit.simple({
+        transaction: transaction,
+        senderAuthenticator: senderAuthenticator,
+        feePayerAuthenticator: feePayerAuthenticator
+      });
+
+      logger.info('⏳ WAITING: For transaction confirmation', {
+        txHash: response.hash
+      });
+
+      // Wait for confirmation
+      const txnResult = await this.aptos.waitForTransaction({ 
+        transactionHash: response.hash 
+      });
+
+      logger.info('✅ SUCCESS: Transaction confirmed', {
+        hash: response.hash,
+        success: txnResult.success,
+        gasUsed: txnResult.gas_used,
+        vmStatus: txnResult.vm_status
+      });
+
+      return {
+        hash: response.hash,
+        success: txnResult.success,
+        gas_used: txnResult.gas_used,
+        vm_status: txnResult.vm_status
+      };
+
+    } catch (error: any) {
+      logger.error('❌ DESERIALIZED SUBMIT ERROR:', {
+        error: error.message,
+        stack: error.stack
+      });
+      throw error;
+    }
+  }
 
 } 

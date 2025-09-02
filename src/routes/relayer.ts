@@ -17,25 +17,15 @@ const relayerController = new RelayerController(aptosService, priceService, gasS
 // Address-specific rate limiter
 const addressRateLimiter = createAddressRateLimiter();
 
-// NEW: Proper gasless flow endpoints (two-signature dance)
-router.post('/gasless/quote', addressRateLimiter, (req, res) => 
-  relayerController.getGaslessQuote(req, res)
-);
-
-router.post('/gasless/submit', addressRateLimiter, (req, res) => 
-  relayerController.submitGaslessTransaction(req, res)
-);
-
-// NEW: Gasless transaction WITH wallet prompt (for transparency)
-router.post('/gasless-with-wallet', addressRateLimiter, async (req, res) => {
+// NEW: PROPER Gasless with serialized transaction (RECOMMENDED)
+router.post('/gasless-wallet-serialized', addressRateLimiter, async (req, res) => {
   try {
-    const result = await relayerController.submitGaslessWithWallet(req, res);
-    return result;
+    return await relayerController.submitGaslessWithProperWallet(req, res);
   } catch (error) {
-    logger.error('Error in gasless-with-wallet endpoint:', error);
+    logger.error('Error in gasless-wallet-serialized endpoint:', error);
     return res.status(500).json({ 
       success: false, 
-      error: 'Failed to process gasless transaction with wallet' 
+      error: 'Failed to process serialized gasless transaction' 
     });
   }
 });
@@ -44,17 +34,6 @@ router.post('/gasless-with-wallet', addressRateLimiter, async (req, res) => {
 router.post('/quote', addressRateLimiter, (req, res) => 
   relayerController.getQuote(req, res)
 );
-
-router.post('/submit', addressRateLimiter, (req, res) => 
-  relayerController.submitTransaction(req, res)
-);
-
-// ⚠️ REMOVED DANGEROUS FREE ENDPOINTS FOR PRODUCTION SAFETY:
-// - /sponsored-quote, /sponsored-build, /sponsored-submit (user pays $0)
-// - /gasless (user pays $0) 
-// - /true-gasless (user pays $0)
-// These endpoints would bankrupt the relayer by providing free transactions.
-// Use /gasless/quote + /gasless/submit instead (user pays USDC fees).
 
 // Status and monitoring routes
 router.get('/balance/:address', (req, res) => 

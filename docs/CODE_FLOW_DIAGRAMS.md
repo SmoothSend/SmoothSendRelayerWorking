@@ -6,7 +6,7 @@
 graph TB
     subgraph "Frontend/Client"
         W[Wallet App<br/>Petra/Martian]
-        C[Client Code<br/>client-example.ts]
+        C[Client Code<br/>examples/client-example.ts]
     end
     
     subgraph "SmoothSend Relayer Server"

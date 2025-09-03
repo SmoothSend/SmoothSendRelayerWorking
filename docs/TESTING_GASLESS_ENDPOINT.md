@@ -10,7 +10,7 @@
 
 First, let's create a simple Node.js script to generate the required signature:
 
-### **Create Test Script: `test-gasless.js`**
+### **Create Test Script: `tests/test-gasless.js`**
 
 ```javascript
 import { Account, Aptos, AptosConfig, Network, Ed25519PrivateKey } from '@aptos-labs/ts-sdk';

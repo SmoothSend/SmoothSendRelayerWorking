@@ -170,7 +170,7 @@ curl http://localhost:3000/safety-stats
 ```
 
 ### Test Gasless Transaction
-Create a test file `test-gasless.ts`:
+Create a test file `tests/test-gasless.ts`:
 ```typescript
 import { 
   Aptos, 
@@ -232,7 +232,7 @@ testGaslessTransaction().catch(console.error);
 
 Run the test:
 ```bash
-npx ts-node test-gasless.ts
+npx ts-node tests/test-gasless.ts
 ```
 
 ## 🏗️ Architecture Details

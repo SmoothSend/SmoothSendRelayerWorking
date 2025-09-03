@@ -17,7 +17,7 @@ curl -X GET http://localhost:3000/api/v1/relayer/health
 
 ### 2. Send Gasless USDC (Recommended Method)
 ```typescript
-// See client-example.ts for complete implementation
+// See examples/client-example.ts for complete implementation
 const response = await fetch('/api/v1/relayer/gasless-wallet-serialized', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -245,7 +245,7 @@ curl -X GET http://localhost:3000/api/v1/relayer/safety-stats
 ### Frontend Integration (React + Petra Wallet)
 
 ```typescript
-import { GaslessWalletClient } from './client-example';
+import { GaslessWalletClient } from './examples/client-example';
 
 // Initialize client
 const client = new GaslessWalletClient(Network.TESTNET, 'http://localhost:3000');
@@ -262,7 +262,7 @@ await client.sendUSDCGasless(
 ### Backend Integration (Node.js)
 
 ```typescript
-import { testGaslessEndpoint } from './test-gasless-simple';
+import { testGaslessEndpoint } from './tests/test-gasless-simple';
 
 // Test gasless functionality
 const success = await testGaslessEndpoint();

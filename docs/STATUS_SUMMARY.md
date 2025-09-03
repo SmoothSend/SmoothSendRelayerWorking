@@ -20,7 +20,7 @@ src/
 │   ├── gasService.ts           ✅ Gas optimization
 │   ├── priceService.ts         ✅ Price feeds
 │   └── safetyMonitor.ts        ✅ Safety limits
-└── client-example.ts           ✅ Reference implementation
+└── examples/client-example.ts    ✅ Reference implementation
 ```
 
 ### 📡 **Working Endpoints** (Base: `/api/v1/relayer`)
@@ -75,15 +75,15 @@ await client.sendUSDCGasless(
 ### 🧪 **Testing Status**
 - ✅ **Health Endpoint**: Operational
 - ✅ **Stats Endpoint**: Functional (DB features limited)
-- ✅ **Gasless Endpoint**: Tested with client-example.ts
+- ✅ **Gasless Endpoint**: Tested with examples/client-example.ts
 - ✅ **Balance Checking**: Working for USDC addresses
 - ✅ **Safety Monitoring**: Beta limits enforced
 
 ### 📚 **Documentation Created**
 1. **`docs/API_DOCUMENTATION.md`** - Complete endpoint reference
 2. **`README.md`** - Production-ready overview
-3. **Code Examples** - `client-example.ts` reference implementation
-4. **Test Files** - `test-gasless-simple.ts` endpoint validation
+3. **Code Examples** - `examples/client-example.ts` reference implementation
+4. **Test Files** - `tests/test-gasless-simple.ts` endpoint validation
 
 ### 🔧 **Technical Highlights**
 - **No Race Conditions**: Transaction serialization approach prevents conflicts
@@ -94,7 +94,7 @@ await client.sendUSDCGasless(
 
 ### 🎯 **Ready for Next Steps**
 1. **Beta Testing** ✅ - Safe limits and monitoring in place
-2. **Frontend Integration** ✅ - `client-example.ts` provides reference
+2. **Frontend Integration** ✅ - `examples/client-example.ts` provides reference
 3. **Production Deployment** ✅ - Docker and Azure deployment ready
 4. **Monitoring** ✅ - Health and safety endpoints operational
 
@@ -109,7 +109,7 @@ await client.sendUSDCGasless(
 
 ## 📞 **Next Actions Available**
 
-1. **Frontend Integration**: Use `client-example.ts` as reference
+1. **Frontend Integration**: Use `examples/client-example.ts` as reference
 2. **Beta Testing**: Deploy and start testing with real users
 3. **Mainnet Preparation**: Update network configuration
 4. **Monitoring Setup**: Deploy with production monitoring

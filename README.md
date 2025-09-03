@@ -65,7 +65,7 @@ curl "http://localhost:3000/api/v1/relayer/balance/YOUR_ADDRESS"
 
 ### 💸 Send Gasless USDC
 ```typescript
-// Using the gasless client (see client-example.ts)
+// Using the gasless client (see examples/client-example.ts)
 const client = new GaslessWalletClient(Network.TESTNET, 'http://localhost:3000');
 
 await client.sendUSDCGasless(
@@ -157,10 +157,10 @@ npm test
 ### Test Gasless Functionality
 ```bash
 # Test the gasless endpoint
-node test-gasless-simple.js
+npm run test:gasless
 
 # Test with real wallet integration
-node client-example.ts
+npm run example:client
 ```
 
 ### Manual Testing

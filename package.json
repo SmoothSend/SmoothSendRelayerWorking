@@ -1,5 +1,5 @@
 {
-  "name": "Smoothsend-aptos-gasless-relayer",
+  "name": "smoothsend-aptos-gasless-relayer",
   "version": "1.0.0",
   "description": "Aptos gasless transaction relayer service",
   "main": "dist/index.js",
@@ -8,6 +8,8 @@
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "test": "jest",
+    "test:gasless": "ts-node tests/test-gasless-simple.ts",
+    "example:client": "ts-node examples/client-example.ts",
     "migrate": "knex migrate:latest",
     "seed": "knex seed:run"
   },

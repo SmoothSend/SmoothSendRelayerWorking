@@ -29,8 +29,8 @@ export class GasService {
       // Get APT price with smart oracle logic
       const aptPrice = await this.priceService.getAptPrice(amountUSD);
       
-      // Use minimum fee for simulation (will be replaced with actual gas-based fee)
-      const tempRelayerFee = "500"; // 0.0005 USDC minimum for simulation
+  // Use a small fee for simulation (will be replaced with actual gas-based fee)
+  const tempRelayerFee = "500"; // 0.0005 USDC for simulation only
 
       // Simulate transaction to get accurate gas estimate
       const gasEstimate = await this.aptosService.simulateSponsoredTransaction(
@@ -56,11 +56,13 @@ export class GasService {
       const markupAmount = Math.ceil(gasCostInUSDC * markup);
       const finalRelayerFee = gasCostInUSDC + markupAmount;
 
-      // Ensure minimum fee of 0.0005 USDC
-      const minimumFeeUSDC = 500; // 0.0005 USDC
+      // Calculate minimum fee: higher of 0.1% of transaction amount OR 0.001 USDC
+      const percentageFee = Math.ceil(parseInt(amount) * 0.001); // 0.1% of transaction
+      const absoluteMinimum = 1000; // 0.001 USDC in micro units
+      const minimumFeeUSDC = Math.max(percentageFee, absoluteMinimum);
       const finalFeeWithMinimum = Math.max(finalRelayerFee, minimumFeeUSDC);
 
-      logger.info('� PRODUCTION Gas Fee Calculation', {
+      logger.info('🔥 PRODUCTION Gas Fee Calculation', {
         aptPrice: `$${aptPrice.toFixed(4)}`,
         gasUnits,
         gasPricePerUnit,
@@ -69,22 +71,22 @@ export class GasService {
         baseFeeUSDC: `${(gasCostInUSDC / 1e6).toFixed(6)} USDC`,
         markupAmount: `${(markupAmount / 1e6).toFixed(6)} USDC (20%)`,
         finalFee: `${(finalFeeWithMinimum / 1e6).toFixed(6)} USDC`,
-        minimumFee: `${(minimumFeeUSDC / 1e6).toFixed(6)} USDC`
+        minimumFee: `${(minimumFeeUSDC / 1e6).toFixed(6)} USDC (max of 0.1% tx amount or 0.001 USDC)`
       });
 
       // Calculate total gas fee for frontend display
       const totalGasFee = new BigNumber(gasUnits).multipliedBy(gasPricePerUnit).toString();
       
       // Treasury fee (small percentage of relayer fee)
-      const treasuryFee = new BigNumber(finalRelayerFee).multipliedBy(0.1);
+      const treasuryFee = new BigNumber(finalFeeWithMinimum).multipliedBy(0.1);
 
       return {
         gasUnits: gasEstimate.gasUnits,
         gasPricePerUnit: gasEstimate.gasPricePerUnit,
         totalGasFee,
         aptPrice: aptPrice.toString(),
-        usdcFee: finalRelayerFee.toString(),
-        relayerFee: finalRelayerFee.toString(),
+        usdcFee: finalFeeWithMinimum.toString(),
+        relayerFee: finalFeeWithMinimum.toString(),
         treasuryFee: treasuryFee.toFixed(0)
       };
     } catch (error) {

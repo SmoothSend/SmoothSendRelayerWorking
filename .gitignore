@@ -96,8 +96,8 @@ temp/
 ehthumbs.db
 Thumbs.db
 smoothsend-frontend/
-aptos-gas-station/
-docs/
 test-gasless-simple.ts
 contract/
 client-example.ts
+smoothsendfrontend/
+docs/

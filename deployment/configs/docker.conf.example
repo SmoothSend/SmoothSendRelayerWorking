@@ -1,0 +1,53 @@
+# Docker Compose Configuration
+# Copy this file to docker.conf and update with your values
+
+# Docker Compose Project
+COMPOSE_PROJECT_NAME="smoothsend"
+
+# Service Versions
+POSTGRES_VERSION="15"
+REDIS_VERSION="7-alpine"
+NODE_VERSION="18"
+
+# PostgreSQL Configuration
+POSTGRES_DB="smoothsend"
+POSTGRES_USER="smoothsend"
+POSTGRES_PASSWORD="smoothsend_password"
+POSTGRES_PORT="5432"
+
+# Redis Configuration
+REDIS_PORT="6379"
+
+# Application Configuration
+NODE_ENV="production"
+PORT="3000"
+LOG_LEVEL="info"
+
+# Network Configuration
+NETWORK_NAME="smoothsend-network"
+
+# Volume Configuration
+POSTGRES_VOLUME="smoothsend_postgres_data"
+REDIS_VOLUME="smoothsend_redis_data"
+
+# Aptos Configuration
+APTOS_NETWORK="testnet"
+PYTH_HERMES_URL="https://hermes.pyth.network"
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS="60000"
+RATE_LIMIT_MAX_REQUESTS="100"
+
+# Transaction Configuration
+FEE_MARKUP_PERCENTAGE="10"
+MIN_APT_BALANCE="1000000000"
+MAX_TRANSACTION_AMOUNT="1000000000"
+PRICE_CACHE_TTL="30"
+GAS_ESTIMATE_BUFFER="20"
+
+# Note: Set sensitive environment variables in your .env file:
+# RELAYER_PRIVATE_KEY=0x...
+# CONTRACT_ADDRESS=0x...
+# TREASURY_ADDRESS=0x...
+# DATABASE_URL will be auto-constructed from POSTGRES_* variables
+# REDIS_URL will be auto-constructed from REDIS_* variables

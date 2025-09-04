@@ -176,35 +176,62 @@ npm run test:load
 
 ## 🚀 Deployment
 
-### Development
+SmoothSend includes an organized deployment system with support for multiple platforms. All deployment scripts and configurations are located in the `deployment/` directory.
+
+### Quick Start
+
+**🎯 Interactive Guide (Recommended)**
 ```bash
-npm run dev
+./deployment/deploy.sh guide
 ```
 
-### Production
+**⚡ Direct Deployment**
 ```bash
-npm run build
-npm start
+# Azure Container Instances (Production)
+./deployment/deploy.sh azure
+
+# Local Development
+./deployment/deploy.sh local
+
+# Docker Compose (Local + Dependencies)
+./deployment/deploy.sh docker
 ```
 
-### Docker
+### Deployment Options
+
+| Platform | Command | Use Case |
+|----------|---------|----------|
+| **Azure Container Instances** | `./deployment/deploy.sh azure` | Production deployment with auto-scaling |
+| **Local Development** | `./deployment/deploy.sh local` | Development and testing |
+| **Docker Compose** | `./deployment/deploy.sh docker` | Local with PostgreSQL + Redis |
+| **Interactive Guide** | `./deployment/deploy.sh guide` | Step-by-step deployment help |
+
+### Advanced Usage
+
 ```bash
-docker build -t smoothsend .
-docker run -p 3000:3000 smoothsend
+# Deploy with custom configuration
+./deployment/deploy.sh azure --config deployment/configs/production.conf
+
+# Dry run (show what would be done)
+./deployment/deploy.sh azure --dry-run
+
+# Validate environment for all deployment types
+./deployment/deploy.sh validate
+
+# Clean up deployment artifacts
+./deployment/deploy.sh clean
 ```
 
-### Azure
-```bash
-./deploy-azure.sh
-```
+**📖 [Complete Deployment Guide →](deployment/README.md)**
 
 ## 📚 Documentation
 
 | Document | Purpose |
 |----------|---------|
 | [**API Documentation**](docs/API_DOCUMENTATION.md) | Complete endpoint reference |
+| [**Deployment Guide**](deployment/README.md) | Comprehensive deployment instructions |
 | [Backend Architecture](docs/BACKEND_ARCHITECTURE.md) | Technical implementation details |
-| [Beta Launch Guide](docs/BETA_LAUNCH_READY.md) | Production deployment checklist |
+| [Environment Variables](docs/ENVIRONMENT_VARIABLES.md) | Configuration guide |
 | [Safety Statistics](docs/SAFETY_STATS_EXPLAINED.md) | Safety monitoring explained |
 
 ## 🎯 Roadmap

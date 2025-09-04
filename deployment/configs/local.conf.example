@@ -1,0 +1,38 @@
+# Local Development Configuration
+# Copy this file to local.conf and update with your values
+
+# Application Configuration
+NODE_ENV="development"
+PORT="3000"
+LOG_LEVEL="debug"
+
+# Development Database (local PostgreSQL)
+# DATABASE_URL="postgresql://localhost:5432/smoothsend_dev"
+
+# Development Redis (local Redis)
+# REDIS_URL="redis://localhost:6379"
+
+# Aptos Configuration for Development
+APTOS_NETWORK="testnet"
+APTOS_RPC_URL="https://api.testnet.aptoslabs.com/v1"
+
+# Development Rate Limiting (more relaxed)
+RATE_LIMIT_WINDOW_MS="60000"
+RATE_LIMIT_MAX_REQUESTS="1000"
+
+# Development Transaction Limits
+MIN_APT_BALANCE="100000000"  # Lower for testing
+MAX_TRANSACTION_AMOUNT="10000000000"  # Higher for testing
+
+# Pricing Configuration
+FEE_MARKUP_PERCENTAGE="5"  # Lower fees for development
+PRICE_CACHE_TTL="10"  # Shorter cache for testing
+GAS_ESTIMATE_BUFFER="50"  # Higher buffer for testing
+
+# External Services
+PYTH_HERMES_URL="https://hermes.pyth.network"
+
+# Note: Set sensitive environment variables in your .env file:
+# RELAYER_PRIVATE_KEY=0x...
+# CONTRACT_ADDRESS=0x...
+# TREASURY_ADDRESS=0x...

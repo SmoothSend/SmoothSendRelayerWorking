@@ -1,0 +1,34 @@
+# Azure Container Instance Configuration
+# Copy this file to azure.conf and update with your values
+
+# Azure Resource Configuration
+RESOURCE_GROUP="smoothsend-rg"
+LOCATION="centralindia"
+CONTAINER_NAME="smoothsend-backend"
+IMAGE_NAME="smoothsend-relayer"
+REGISTRY_NAME="smoothsendregistry"
+DNS_NAME_LABEL="smoothsend-backend"
+
+# Container Resource Allocation
+CPU_CORES="1"
+MEMORY_GB="2"
+
+# Application Configuration
+APTOS_NETWORK="testnet"
+PYTH_HERMES_URL="https://hermes.pyth.network"
+FEE_MARKUP_PERCENTAGE="10"
+MIN_APT_BALANCE="1000000000"
+MAX_TRANSACTION_AMOUNT="1000000000"
+LOG_LEVEL="info"
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS="60000"
+RATE_LIMIT_MAX_REQUESTS="100"
+
+# Caching and Performance
+PRICE_CACHE_TTL="30"
+GAS_ESTIMATE_BUFFER="20"
+
+# Note: Sensitive environment variables like RELAYER_PRIVATE_KEY, 
+# DATABASE_URL, REDIS_URL should be set as environment variables
+# and not stored in this configuration file.

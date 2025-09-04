@@ -1,10 +1,31 @@
 # Azure Environment Variables Template
 # Copy these to your Azure App Service Configuration -> Application Settings
+# Uses standardized SmoothSend environment variable naming
+
+# =============================================================================
+# REQUIRED CONFIGURATION
+# =============================================================================
 
 # Aptos Network Configuration
-APTOS_NODE_URL=https://fullnode.testnet.aptoslabs.com/v1
-APTOS_PRIVATE_KEY=your_private_key_here
-APTOS_ACCOUNT_ADDRESS=your_account_address_here
+APTOS_NETWORK=testnet
+APTOS_RPC_URL=https://api.testnet.aptoslabs.com/v1
+
+# Authentication & Security
+RELAYER_PRIVATE_KEY=your_private_key_here
+TREASURY_ADDRESS=your_treasury_address_here
+
+# Contract Addresses (standardized naming)
+USDC_CONTRACT_ADDRESS=0x3c27315fb69ba6e4b960f1507d1cefcc9a4247869f26a8d59d6b7869d23782c::test_coins::USDC
+SMOOTHSEND_CONTRACT_ADDRESS=your_smoothsend_contract_address_here
+RELAYER_ADDRESS=your_relayer_address_here
+
+# =============================================================================
+# AZURE SPECIFIC CONFIGURATION
+# =============================================================================
+
+# Server Configuration
+PORT=8080
+NODE_ENV=production
 
 # Database Configuration (use Azure Database for PostgreSQL)
 DATABASE_URL=postgresql://username:password@your-azure-postgres.postgres.database.azure.com:5432/smoothsend
@@ -12,24 +33,37 @@ DATABASE_URL=postgresql://username:password@your-azure-postgres.postgres.databas
 # Redis Configuration (use Azure Cache for Redis)
 REDIS_URL=redis://your-azure-redis.redis.cache.windows.net:6380
 
-# Server Configuration
-PORT=8080
-NODE_ENV=production
-
 # CORS Configuration
-CORS_ORIGIN=https://your-frontend-domain.vercel.app
+ALLOWED_ORIGINS=https://your-frontend-domain.vercel.app
+CORS_CREDENTIALS=false
+
+# =============================================================================
+# FINANCIAL & PERFORMANCE CONFIGURATION
+# =============================================================================
+
+# Financial Configuration
+FEE_MARKUP_PERCENTAGE=10
+MIN_APT_BALANCE=1000000000
+MAX_TRANSACTION_AMOUNT=1000000000
 
 # Rate Limiting
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX_REQUESTS=100
 
-# Gas and Fee Configuration
-MAX_GAS_UNITS=100000
-GAS_UNIT_PRICE=100
-RELAYER_FEE_PERCENTAGE=0.5
+# Performance & Caching
+PRICE_CACHE_TTL=30
+GAS_ESTIMATE_BUFFER=20
 
-# USDC Contract Address
-USDC_CONTRACT_ADDRESS=0x3c27315fb69ba6e4b960f1507d1cefcc9a4247869f26a8d59d6b7869d23782c::test_coins::USDC
+# External Services
+PYTH_HERMES_URL=https://hermes.pyth.network
 
 # Logging
 LOG_LEVEL=info
+
+# =============================================================================
+# LEGACY COMPATIBILITY (optional)
+# =============================================================================
+# These variables are for backward compatibility with older configurations
+# MAX_GAS_UNITS=100000
+# GAS_UNIT_PRICE=100
+# RELAYER_FEE_PERCENTAGE=0.5

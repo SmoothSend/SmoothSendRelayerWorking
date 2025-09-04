@@ -28,9 +28,11 @@ npm install
 
 ### 2. Environment Setup
 ```bash
-cp env.template .env
-# Edit .env with your configuration
+cp .env.example .env
+# Edit .env with your configuration using standardized variable names
 ```
+
+**🆕 New:** SmoothSend now uses a unified environment variable management system with validation. See [`docs/ENVIRONMENT_VARIABLES.md`](./docs/ENVIRONMENT_VARIABLES.md) for the complete configuration guide.
 
 ### 3. Start Development Server
 ```bash

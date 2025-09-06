@@ -1,8 +1,13 @@
 # Use official Node.js runtime as base image
-FROM node:18-alpine
+FROM node:23-slim
 
 # Set working directory
 WORKDIR /app
+
+# Install runtime utilities required by healthchecks
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  curl \
+  ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY package*.json ./
@@ -16,9 +21,9 @@ COPY . .
 # Build TypeScript
 RUN npm run build
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S relayer -u 1001
+# Create non-root user for security (Debian-compatible)
+RUN groupadd -g 1001 nodejs || true && \
+  useradd -u 1001 -g nodejs -s /usr/sbin/nologin -M relayer || true
 
 # Change ownership of the app directory
 RUN chown -R relayer:nodejs /app

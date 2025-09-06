@@ -398,6 +398,37 @@ npm run start        # Production preview
 - Keep signature verification logic in `aptosService.ts`
 - Add new endpoints in `relayerController.ts`
 - Use proper TypeScript types from `types/index.ts`
+
+## Docker image
+
+### Push to Docker Hub (local)
+
+You can tag and push the locally-built image to Docker Hub. Replace the username and repo as needed.
+
+1. Build the image locally (from project root):
+
+```bash
+npm run build
+docker build -t smoothsend-backend:latest .
+```
+
+2. Use the bundled script to tag & push:
+
+```bash
+./scripts/push-image.sh smoothsend-backend:latest ivedmohan smoothsend-backend latest
+```
+
+Make sure you're logged in to Docker Hub. If you use 2FA, create a Personal Access Token and use it as the password during `docker login`.
+
+### Push via GitHub Actions
+
+There's a GitHub Actions workflow at `.github/workflows/docker-publish.yml` that builds and pushes the image to Docker Hub when changes are pushed to `main` or when you run the workflow manually.
+
+You must set the following repository secrets:
+
+- `DOCKERHUB_USERNAME` — your Docker Hub username (e.g. `ivedmohan`)
+- `DOCKERHUB_TOKEN` — a Docker Hub personal access token (or password if no 2FA)
+
 - Follow existing logging patterns with `logger.ts`
 
 **2. Environment Management:**

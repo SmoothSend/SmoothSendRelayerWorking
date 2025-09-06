@@ -96,3 +96,8 @@ temp/
 ehthumbs.db
 Thumbs.db
 smoothsend-frontend/
+# Local test and helper artifacts
+docker-compose.test.yml
+test-docker-apis.sh
+DOCKER_TEST_RESULTS.md
+*.local.sh

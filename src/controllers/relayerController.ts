@@ -65,6 +65,11 @@ export class RelayerController {
 
       res.json(quote);
     } catch (error) {
+      const errAny = error as any;
+      if (errAny && (errAny.upstream || errAny.code === 'EAI_AGAIN' || errAny.code === 'UPSTREAM_UNAVAILABLE' || (errAny.message && (errAny.message.includes('EAI_AGAIN') || errAny.message.includes('getaddrinfo'))))) {
+        logger.error('Upstream Aptos RPC failure while getting quote:', errAny);
+        return res.status(503).json({ error: 'Upstream Aptos RPC unreachable', detail: errAny.message || String(errAny) });
+      }
       logger.error('Error getting quote:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
@@ -158,6 +163,11 @@ export class RelayerController {
         timestamp: new Date()
       });
     } catch (error) {
+      const errAny = error as any;
+      if (errAny && (errAny.upstream || errAny.code === 'EAI_AGAIN' || errAny.code === 'UPSTREAM_UNAVAILABLE' || (errAny.message && (errAny.message.includes('EAI_AGAIN') || errAny.message.includes('getaddrinfo'))))) {
+        logger.error('Upstream Aptos RPC failure during health check:', errAny);
+        return res.status(503).json({ status: 'unhealthy', error: 'Upstream Aptos RPC unreachable' });
+      }
       logger.error('Error checking health:', error);
       res.status(500).json({ 
         status: 'unhealthy',
@@ -192,6 +202,11 @@ export class RelayerController {
         timestamp: new Date()
       });
     } catch (error) {
+      const errAny = error as any;
+      if (errAny && (errAny.upstream || errAny.code === 'EAI_AGAIN' || errAny.code === 'UPSTREAM_UNAVAILABLE' || (errAny.message && (errAny.message.includes('EAI_AGAIN') || errAny.message.includes('getaddrinfo'))))) {
+        logger.error('Upstream Aptos RPC failure while getting balance:', errAny);
+        return res.status(503).json({ success: false, error: 'Upstream Aptos RPC unreachable' });
+      }
       logger.error('Error getting balance:', error);
       res.status(500).json({ 
         success: false,
@@ -253,6 +268,11 @@ export class RelayerController {
         });
       }
     } catch (error) {
+      const errAny = error as any;
+      if (errAny && (errAny.upstream || errAny.code === 'EAI_AGAIN' || errAny.code === 'UPSTREAM_UNAVAILABLE' || (errAny.message && (errAny.message.includes('EAI_AGAIN') || errAny.message.includes('getaddrinfo'))))) {
+        logger.error('Upstream Aptos RPC failure while getting stats:', errAny);
+        return res.status(503).json({ error: 'Upstream Aptos RPC unreachable' });
+      }
       logger.error('Error getting stats:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
@@ -339,6 +359,11 @@ export class RelayerController {
       });
 
     } catch (error) {
+      const errAny = error as any;
+      if (errAny && (errAny.code === 'EAI_AGAIN' || (errAny.message && (errAny.message.includes('EAI_AGAIN') || errAny.message.includes('getaddrinfo'))))) {
+        logger.error('Upstream DNS error contacting Aptos RPC while generating gasless quote:', errAny);
+        return res.status(503).json({ error: 'Upstream Aptos RPC unreachable' });
+      }
       logger.error('Error generating gasless quote:', error);
       res.status(500).json({ error: 'Failed to generate quote' });
     }
@@ -467,6 +492,24 @@ export class RelayerController {
       });
 
     } catch (error) {
+      const errAny = error as any;
+      if (errAny && (errAny.code === 'EAI_AGAIN' || (errAny.message && (errAny.message.includes('EAI_AGAIN') || errAny.message.includes('getaddrinfo'))))) {
+        logger.error('Upstream DNS error contacting Aptos RPC while submitting gasless transaction:', errAny);
+        // Mark transaction as failed in database (non-blocking)
+        try {
+          if (db && transactionId) {
+            await db('transactions')
+              .where('id', transactionId)
+              .update({ 
+                status: 'failed',
+                error_message: 'Upstream Aptos RPC unreachable (DNS failure)'
+              });
+          }
+        } catch (dbError) {
+          logger.warn('Database error update failed:', dbError);
+        }
+        return res.status(503).json({ error: 'Upstream Aptos RPC unreachable' });
+      }
       logger.error('Error submitting gasless transaction:', error);
       
       // Mark transaction as failed in database (non-blocking)

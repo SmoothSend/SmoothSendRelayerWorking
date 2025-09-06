@@ -38,6 +38,15 @@ import { logger } from '../utils/logger';
 import { PriceService } from './priceService';
 import BigNumber from 'bignumber.js';
 
+function isUpstreamNetworkError(err: any): boolean {
+  if (!err) return false;
+  const code = err.code || err.name || '';
+  const msg = (err.message || '').toString();
+  if (['EAI_AGAIN', 'ENOTFOUND', 'ERR_STREAM_DESTROYED', 'ERR_GOT_REQUEST_ERROR', 'RequestError'].includes(code)) return true;
+  if (msg.includes('getaddrinfo') || msg.includes('Cannot call end after a stream was destroyed') || msg.includes('onCancel') || msg.includes('The `onCancel` handler')) return true;
+  return false;
+}
+
 export class AptosService {
   private aptos: Aptos;
   private relayerAccount: Account;
@@ -165,6 +174,13 @@ export class AptosService {
       return balance.toString();
     } catch (error) {
       logger.error('Failed to get account balance:', error);
+      if (isUpstreamNetworkError(error)) {
+        const e: any = new Error('Upstream Aptos RPC unreachable');
+        e.code = 'UPSTREAM_UNAVAILABLE';
+        e.upstream = true;
+        e.original = error;
+        throw e;
+      }
       throw error;
     }
   }
@@ -201,6 +217,13 @@ export class AptosService {
       }
     } catch (error) {
       logger.error('Failed to get coin balance:', error);
+      if (isUpstreamNetworkError(error)) {
+        const e: any = new Error('Upstream Aptos RPC unreachable');
+        e.code = 'UPSTREAM_UNAVAILABLE';
+        e.upstream = true;
+        e.original = error;
+        throw e;
+      }
       throw error;
     }
   }

@@ -36,7 +36,7 @@ services:
       - LOG_LEVEL=info
       - RATE_LIMIT_WINDOW_MS=60000
       - RATE_LIMIT_MAX_REQUESTS=100
-      - DATABASE_URL=postgresql://postgres.mewwcxcrnsuglwrfrijz:ved.mohan.2022@msit.in@aws-0-ap-south-1.pooler.supabase.com:6543/postgres
+      - DATABASE_URL=[secret]
       - REDIS_URL=redis://redis:6379
 profiles:
   compute:

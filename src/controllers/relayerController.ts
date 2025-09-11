@@ -20,6 +20,11 @@ import { PriceService } from '../services/priceService';
 import { GasService } from '../services/gasService';
 import { logger } from '../utils/logger';
 import BigNumber from 'bignumber.js';
+import { config } from '../config';
+import { db } from '../database/postgres';
+import { safetyMonitor } from '../services/safetyMonitor';
+import { gaslessQuoteRequestSchema, gaslessSubmitRequestSchema } from '../utils/validation';
+import { GaslessQuoteRequest, GaslessSubmitRequest } from '../types';
 
 export class RelayerController {
   constructor(
@@ -152,6 +157,11 @@ export class RelayerController {
       });
 
     } catch (error: any) {
+      const errAny = error as any;
+      if (errAny && (errAny.upstream || errAny.code === 'EAI_AGAIN' || errAny.code === 'UPSTREAM_UNAVAILABLE' || (errAny.message && (errAny.message.includes('EAI_AGAIN') || errAny.message.includes('getaddrinfo'))))) {
+        logger.error('Upstream Aptos RPC failure while getting quote:', errAny);
+        return res.status(503).json({ error: 'Upstream Aptos RPC unreachable', detail: errAny.message || String(errAny) });
+      }
       logger.error('Error getting quote:', error);
       return res.status(500).json({ 
         success: false, 
